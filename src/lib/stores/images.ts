@@ -4,6 +4,7 @@ import {
   getImages, 
   getImageDetails, 
   removeImage,
+  pullImage,
   handleTauriError 
 } from '../services/tauri-commands.js';
 
@@ -63,9 +64,9 @@ export async function loadImageDetails(id: string) {
 }
 
 export async function performImageAction(
-  action: 'remove',
+  action: 'remove' | 'pull',
   id: string,
-  options?: { force?: boolean; noPrune?: boolean }
+  options?: { force?: boolean; noPrune?: boolean; imageName?: string; tag?: string }
 ) {
   try {
     imageOperationInProgress.set(`${action}-${id}`);
@@ -74,6 +75,12 @@ export async function performImageAction(
     switch (action) {
       case 'remove':
         await removeImage(id, options?.force || false, options?.noPrune || false);
+        break;
+      case 'pull':
+        if (!options?.imageName) {
+          throw new Error('Image name is required for pull operation');
+        }
+        await pullImage(options.imageName, options.tag);
         break;
       default:
         throw new Error(`Unknown action: ${action}`);
@@ -95,6 +102,10 @@ export async function performImageAction(
 // Convenience function for remove action
 export const removeImageAction = (id: string, force?: boolean, noPrune?: boolean) => 
   performImageAction('remove', id, { force, noPrune });
+
+// Convenience function for pull action
+export const pullImageAction = (imageName: string, tag?: string) => 
+  performImageAction('pull', imageName, { imageName, tag });
 
 // Derived stores for filtered and sorted images
 import { derived } from 'svelte/store';

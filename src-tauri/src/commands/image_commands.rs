@@ -1,5 +1,5 @@
 use crate::docker::{
-    list_images, inspect_image, remove_image, ImageListItem, ImageDetails,
+    list_images, inspect_image, remove_image, pull_image, ImageListItem, ImageDetails,
 };
 use crate::utils::Result;
 
@@ -16,4 +16,9 @@ pub async fn get_image_details(id: String) -> Result<ImageDetails> {
 #[tauri::command]
 pub async fn remove_image_cmd(id: String, force: bool, no_prune: bool) -> Result<()> {
     remove_image(&id, force, no_prune).await
+}
+
+#[tauri::command]
+pub async fn pull_image_cmd(name: String, tag: Option<String>) -> Result<()> {
+    pull_image(&name, tag.as_deref()).await
 }

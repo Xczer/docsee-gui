@@ -18,8 +18,10 @@
 		formatRelativeTime, 
 		parseImageTag 
 	} from '$lib/utils/formatters.js';
+	import PullImageDialog from '$lib/components/docker/images/PullImageDialog.svelte';
 
 	let mounted = false;
+	let showPullDialog = false;
 
 	onMount(async () => {
 		mounted = true;
@@ -153,6 +155,19 @@
 					>
 				</div>
 
+				<!-- Pull Image Button -->
+				<button
+					type="button"
+					style="padding: 0.5rem 1rem; border: 1px solid #10b981; border-radius: 0.375rem; background-color: #10b981; color: white; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 0.5rem;"
+					on:click={() => showPullDialog = true}
+					disabled={$isLoadingImages}
+				>
+					<svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+					</svg>
+					Pull Image
+				</button>
+
 				<!-- Refresh Button -->
 				<button
 					type="button"
@@ -261,6 +276,15 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Pull Image Dialog -->
+<PullImageDialog 
+	bind:open={showPullDialog} 
+	on:success={() => {
+		// Dialog will close automatically on success
+		// Images list will be refreshed by the pullImageAction
+	}}
+/>
 
 <style>
 	button:hover:not(:disabled) {

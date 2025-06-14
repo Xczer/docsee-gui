@@ -460,4 +460,10 @@ export interface ContainerLogOptions {
   tail?: string;
 }
 
+export interface ContainerLogLine {
+  timestamp?: string;
+  stream: 'stdout' | 'stderr';
+  content: string;
+}
+
 export type ContainerStatus = 'created' | 'restarting' | 'running' | 'removing' | 'paused' | 'exited' | 'dead';

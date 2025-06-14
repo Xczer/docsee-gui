@@ -1,5 +1,6 @@
-use bollard::image::{ListImagesOptions, RemoveImageOptions};
+use bollard::image::{ListImagesOptions, RemoveImageOptions, CreateImageOptions};
 use bollard::models::{ImageSummary as BollardImageSummary, ImageInspect as BollardImageInspect};
+use futures_util::stream::TryStreamExt;
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use crate::docker::client::DOCKER_CLIENT;
@@ -123,6 +124,32 @@ pub async fn remove_image(id: &str, force: bool, no_prune: bool) -> Result<()> {
             } else {
                 Err(DockerError::Connection(e))
             }
+        }
+    }
+}
+
+pub async fn pull_image(name: &str, tag: Option<&str>) -> Result<()> {
+    let client = DOCKER_CLIENT.get_client().await?;
+    
+    let image_name = if let Some(tag) = tag {
+        format!("{}:{}", name, tag)
+    } else {
+        name.to_string()
+    };
+    
+    let options = Some(CreateImageOptions {
+        from_image: image_name.clone(),
+        ..Default::default()
+    });
+
+    match client.create_image(options, None, None).try_collect::<Vec<_>>().await {
+        Ok(_) => {
+            log_docker_operation("pull_image", true, Some(&format!("Pulled image {}", image_name)));
+            Ok(())
+        }
+        Err(e) => {
+            log_docker_operation("pull_image", false, Some(&e.to_string()));
+            Err(DockerError::Connection(e))
         }
     }
 }

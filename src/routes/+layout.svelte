@@ -8,13 +8,18 @@
 		isConnecting,
 		dockerError 
 	} from '$lib/stores/docker.js';
+	import { initializeTheme, theme } from '$lib/stores/theme.js';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import ThemeToggle from '$lib/components/common/ThemeToggle.svelte';
 
 	let mounted = false;
+	let themeCleanup: (() => void) | undefined;
 
 	onMount(async () => {
 		mounted = true;
+		// Initialize theme system
+		themeCleanup = initializeTheme();
 		// Initialize Docker connection when the app starts
 		await initializeDockerConnection();
 		// Start auto-refresh of connection status
@@ -23,6 +28,10 @@
 
 	onDestroy(() => {
 		stopAutoRefresh();
+		// Cleanup theme listeners
+		if (themeCleanup) {
+			themeCleanup();
+		}
 	});
 
 	// Reactive statements for navigation highlighting
@@ -33,15 +42,6 @@
 		if (route !== '/' && currentPath.startsWith(route)) return true;
 		return false;
 	}
-
-	function getNavItemClass(route: string): string {
-		const baseClass = "padding: 0.5rem 0.75rem; font-size: 0.875rem; font-weight: 500; text-decoration: none; border-radius: 0.375rem; transition: all 0.2s;";
-		if (isActiveRoute(route)) {
-			return baseClass + " color: #2563eb; background-color: #eff6ff;";
-		} else {
-			return baseClass + " color: #6b7280;";
-		}
-	}
 </script>
 
 <svelte:head>
@@ -49,32 +49,32 @@
 	<meta name="description" content="Modern Docker management application built with Tauri and Svelte" />
 </svelte:head>
 
-<div style="min-height: 100vh; background-color: #f9fafb;">
+<div class="main-container">
 	<!-- Header -->
-	<header style="background-color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-bottom: 1px solid #e5e7eb;">
+	<header class="header">
 		<div style="max-width: 1280px; margin: 0 auto; padding: 0 1rem;">
 			<div style="display: flex; justify-content: space-between; align-items: center; height: 4rem;">
 				<div style="display: flex; align-items: center;">
 					<div style="flex-shrink: 0;">
-						<h1 style="font-size: 1.5rem; font-weight: bold; color: #111827; margin: 0;">DocSee</h1>
+						<h1 style="font-size: 1.5rem; font-weight: bold; margin: 0;" class="{$theme === 'dark' ? 'text-white' : 'text-gray-900'}">DocSee</h1>
 					</div>
 					<nav style="display: none; margin-left: 2rem; gap: 0.5rem;" class="nav-links">
-						<a href="/" style={getNavItemClass('/')}>
+						<a href="/" class="nav-link {isActiveRoute('/') ? 'active' : ''}">
 							Dashboard
 						</a>
-						<a href="/containers" style={getNavItemClass('/containers')}>
+						<a href="/containers" class="nav-link {isActiveRoute('/containers') ? 'active' : ''}">
 							Containers
 						</a>
-						<a href="/images" style={getNavItemClass('/images')}>
+						<a href="/images" class="nav-link {isActiveRoute('/images') ? 'active' : ''}">
 							Images
 						</a>
-						<a href="/networks" style={getNavItemClass('/networks')}>
+						<a href="/networks" class="nav-link {isActiveRoute('/networks') ? 'active' : ''}">
 							Networks
 						</a>
-						<a href="/volumes" style={getNavItemClass('/volumes')}>
+						<a href="/volumes" class="nav-link {isActiveRoute('/volumes') ? 'active' : ''}">
 							Volumes
 						</a>
-						<a href="/system" style={getNavItemClass('/system')}>
+						<a href="/system" class="nav-link {isActiveRoute('/system') ? 'active' : ''}">
 							System
 						</a>
 					</nav>
@@ -84,25 +84,28 @@
 					<!-- Docker Connection Status -->
 					<div style="display: flex; align-items: center; gap: 0.5rem;">
 						{#if $isConnecting}
-							<div style="width: 8px; height: 8px; background-color: #f59e0b; border-radius: 50%; animation: pulse 2s infinite;"></div>
+							<div class="connection-dot connecting"></div>
 							<span style="font-size: 0.875rem; color: #f59e0b;">Connecting...</span>
 						{:else if $connectionStatus.connected}
-							<div style="width: 8px; height: 8px; background-color: #10b981; border-radius: 50%;"></div>
+							<div class="connection-dot connected"></div>
 							<span style="font-size: 0.875rem; color: #6b7280;">
 								Connected {$connectionStatus.version ? `(${$connectionStatus.version})` : ''}
 							</span>
 						{:else}
-							<div style="width: 8px; height: 8px; background-color: #ef4444; border-radius: 50%;"></div>
+							<div class="connection-dot disconnected"></div>
 							<span style="font-size: 0.875rem; color: #6b7280;">
 								{$connectionStatus.error ? 'Error' : 'Disconnected'}
 							</span>
 						{/if}
 					</div>
 					
+					<!-- Theme Toggle -->
+					<ThemeToggle variant="dropdown" size="md" />
+					
 					<!-- Settings button -->
 					<button
 						type="button"
-						style="color: #6b7280; padding: 0.25rem; border-radius: 0.375rem; border: none; background: none; cursor: pointer; transition: color 0.2s;"
+						style="padding: 0.25rem; color: #6b7280; border-radius: 0.375rem; border: none; background: none; cursor: pointer; transition: color 0.2s;"
 						on:click={() => goto('/settings')}
 						aria-label="Settings"
 					>
@@ -118,7 +121,7 @@
 	
 	<!-- Error Banner -->
 	{#if $dockerError}
-		<div style="background-color: #fef2f2; border-bottom: 1px solid #fecaca; padding: 0.75rem;">
+		<div class="error-banner">
 			<div style="max-width: 1280px; margin: 0 auto; padding: 0 1rem;">
 				<div style="display: flex; align-items: center; gap: 0.75rem;">
 					<svg style="width: 1.25rem; height: 1.25rem; color: #ef4444;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,6 +134,7 @@
 						type="button"
 						style="margin-left: auto; color: #6b7280; background: none; border: none; cursor: pointer;"
 						on:click={() => dockerError.set(null)}
+						aria-label="Close error message"
 					>
 						<svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -159,19 +163,103 @@
 		background-color: #f9fafb;
 	}
 
-	@media (min-width: 768px) {
-		.nav-links {
-			display: flex !important;
-		}
+	:global(.dark body) {
+		background-color: #111827;
+		color: #f9fafb;
 	}
 
-	a:hover {
-		color: #2563eb !important;
-		background-color: #f3f4f6 !important;
+	/* Dark mode root styles */
+	:global(.dark) {
+		color-scheme: dark;
 	}
 
-	button:hover {
-		color: #374151 !important;
+	:global(.light) {
+		color-scheme: light;
+	}
+
+	/* Header styles */
+	.header {
+		background-color: white;
+		border-bottom: 1px solid #e5e7eb;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+	}
+
+	:global(.dark) .header {
+		background-color: #1f2937;
+		border-bottom-color: #374151;
+	}
+
+	.main-container {
+		min-height: 100vh;
+		background-color: #f9fafb;
+	}
+
+	:global(.dark) .main-container {
+		background-color: #111827;
+	}
+
+	.nav-link {
+		padding: 0.5rem 0.75rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		text-decoration: none;
+		border-radius: 0.375rem;
+		transition: all 0.2s;
+		color: #6b7280;
+	}
+
+	.nav-link:hover {
+		color: #2563eb;
+		background-color: #f3f4f6;
+	}
+
+	.nav-link.active {
+		color: #2563eb;
+		background-color: #eff6ff;
+	}
+
+	:global(.dark) .nav-link {
+		color: #d1d5db;
+	}
+
+	:global(.dark) .nav-link:hover {
+		color: #60a5fa;
+		background-color: #374151;
+	}
+
+	:global(.dark) .nav-link.active {
+		color: #60a5fa;
+		background-color: #1e3a8a;
+	}
+
+	.error-banner {
+		background-color: #fef2f2;
+		border-bottom: 1px solid #fecaca;
+		padding: 0.75rem;
+	}
+
+	:global(.dark) .error-banner {
+		background-color: rgba(153, 27, 27, 0.2);
+		border-bottom-color: #7f1d1d;
+	}
+
+	.connection-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+	}
+
+	.connection-dot.connecting {
+		background-color: #f59e0b;
+		animation: pulse 2s infinite;
+	}
+
+	.connection-dot.connected {
+		background-color: #10b981;
+	}
+
+	.connection-dot.disconnected {
+		background-color: #ef4444;
 	}
 
 	@keyframes pulse {
@@ -180,6 +268,12 @@
 		}
 		50% {
 			opacity: 0.5;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.nav-links {
+			display: flex !important;
 		}
 	}
 </style>

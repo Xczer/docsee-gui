@@ -1,8 +1,9 @@
 use bollard::container::{
     ListContainersOptions, InspectContainerOptions, StartContainerOptions,
     StopContainerOptions, RestartContainerOptions, RemoveContainerOptions,
-    KillContainerOptions, StatsOptions,
+    KillContainerOptions, StatsOptions, LogsOptions,
 };
+use bollard::exec::{CreateExecOptions, StartExecResults};
 use bollard::models::{ContainerSummary, ContainerInspectResponse};
 use bollard::container::Stats;
 use futures_util::stream::TryStreamExt;
@@ -135,6 +136,13 @@ pub struct ContainerStatsData {
     pub networks: Option<HashMap<String, serde_json::Value>>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContainerLogLine {
+    pub timestamp: Option<String>,
+    pub stream: String, // "stdout" or "stderr"
+    pub content: String,
+}
+
 pub async fn list_containers(all: bool) -> Result<Vec<ContainerListItem>> {
     let client = DOCKER_CLIENT.get_client().await?;
 
@@ -156,6 +164,62 @@ pub async fn list_containers(all: bool) -> Result<Vec<ContainerListItem>> {
         Err(e) => {
             log_docker_operation("list_containers", false, Some(&e.to_string()));
             Err(DockerError::Connection(e))
+        }
+    }
+}
+
+pub async fn exec_container(
+    id: &str,
+    cmd: Vec<String>,
+    interactive: bool,
+    tty: bool,
+) -> Result<String> {
+    let client = DOCKER_CLIENT.get_client().await?;
+
+    // Create exec instance
+    let exec_options = CreateExecOptions {
+        attach_stdout: Some(true),
+        attach_stderr: Some(true),
+        attach_stdin: Some(interactive),
+        tty: Some(tty),
+        cmd: Some(cmd),
+        ..Default::default()
+    };
+
+    match client.create_exec(id, exec_options).await {
+        Ok(exec_created) => {
+            // Start exec
+            match client.start_exec(&exec_created.id, None).await {
+                Ok(StartExecResults::Attached { mut output, .. }) => {
+                    let mut result = String::new();
+                    while let Some(chunk) = output.try_next().await.map_err(|e| DockerError::Connection(e))? {
+                        result.push_str(&String::from_utf8_lossy(&chunk.into_bytes()));
+                    }
+                    
+                    log_docker_operation("exec_container", true, Some(&format!("Executed command in container {}", id)));
+                    Ok(result)
+                }
+                Ok(StartExecResults::Detached) => {
+                    log_docker_operation("exec_container", true, Some(&format!("Executed detached command in container {}", id)));
+                    Ok("Command executed in detached mode".to_string())
+                }
+                Err(e) => {
+                    log_docker_operation("exec_container", false, Some(&e.to_string()));
+                    if e.to_string().contains("404") {
+                        Err(DockerError::ContainerNotFound { id: id.to_string() })
+                    } else {
+                        Err(DockerError::Connection(e))
+                    }
+                }
+            }
+        }
+        Err(e) => {
+            log_docker_operation("exec_container", false, Some(&e.to_string()));
+            if e.to_string().contains("404") {
+                Err(DockerError::ContainerNotFound { id: id.to_string() })
+            } else {
+                Err(DockerError::Connection(e))
+            }
         }
     }
 }
@@ -319,6 +383,67 @@ pub async fn get_container_stats(id: &str) -> Result<ContainerStatsData> {
         }
         Err(e) => {
             log_docker_operation("get_container_stats", false, Some(&e.to_string()));
+            if e.to_string().contains("404") {
+                Err(DockerError::ContainerNotFound { id: id.to_string() })
+            } else {
+                Err(DockerError::Connection(e))
+            }
+        }
+    }
+}
+
+pub async fn get_container_logs(
+    id: &str,
+    follow: bool,
+    tail: Option<String>,
+    since: Option<String>,
+    until: Option<String>,
+) -> Result<Vec<ContainerLogLine>> {
+    let client = DOCKER_CLIENT.get_client().await?;
+
+    let options = Some(LogsOptions::<String> {
+        stdout: true,
+        stderr: true,
+        follow,
+        timestamps: true,
+        tail: tail.unwrap_or_else(|| "100".to_string()),
+        since: since.and_then(|s| s.parse::<i64>().ok()).unwrap_or(0),
+        until: until.and_then(|s| s.parse::<i64>().ok()).unwrap_or(0),
+        ..Default::default()
+    });
+
+    match client.logs(id, options).try_collect::<Vec<_>>().await {
+        Ok(logs) => {
+            let mut result = Vec::new();
+
+            for log_output in logs {
+                let content = String::from_utf8_lossy(&log_output.into_bytes()).to_string();
+
+                // Parse the log line to extract timestamp and content
+                let (timestamp, cleaned_content) = if content.starts_with(char::is_numeric) {
+                    // Docker log format: "2024-01-01T12:00:00.000000000Z message"
+                    if let Some(space_pos) = content.find(' ') {
+                        let (ts, msg) = content.split_at(space_pos);
+                        (Some(ts.to_string()), msg.trim_start().to_string())
+                    } else {
+                        (None, content)
+                    }
+                } else {
+                    (None, content)
+                };
+
+                result.push(ContainerLogLine {
+                    timestamp,
+                    stream: "stdout".to_string(), // We'll improve this logic later
+                    content: cleaned_content,
+                });
+            }
+
+            log_docker_operation("get_container_logs", true, Some(&format!("Retrieved {} log lines for container {}", result.len(), id)));
+            Ok(result)
+        }
+        Err(e) => {
+            log_docker_operation("get_container_logs", false, Some(&e.to_string()));
             if e.to_string().contains("404") {
                 Err(DockerError::ContainerNotFound { id: id.to_string() })
             } else {

@@ -245,6 +245,44 @@
 									</td>
 									<td style="padding: 1rem; text-align: right;">
 										<div style="display: flex; gap: 0.25rem; justify-content: flex-end;">
+											<!-- View Logs Button -->
+											<a
+												href="/containers/{container.id}/logs"
+												style="padding: 0.25rem 0.5rem; border: 1px solid #6b7280; border-radius: 0.25rem; background-color: white; color: #6b7280; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center;"
+												title="View logs"
+											>
+												<svg style="width: 0.75rem; height: 0.75rem; margin-right: 0.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+												</svg>
+												Logs
+											</a>
+											
+											<!-- View Stats Button -->
+											<a
+												href="/containers/{container.id}/stats"
+												style="padding: 0.25rem 0.5rem; border: 1px solid #8b5cf6; border-radius: 0.25rem; background-color: white; color: #8b5cf6; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center;"
+												title="View stats"
+											>
+												<svg style="width: 0.75rem; height: 0.75rem; margin-right: 0.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+												</svg>
+												Stats
+											</a>
+
+											<!-- Shell Access Button -->
+											{#if container.state === 'running'}
+												<a
+													href="/containers/{container.id}/shell"
+													style="padding: 0.25rem 0.5rem; border: 1px solid #059669; border-radius: 0.25rem; background-color: white; color: #059669; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center;"
+													title="Access shell"
+												>
+													<svg style="width: 0.75rem; height: 0.75rem; margin-right: 0.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" />
+													</svg>
+													Shell
+												</a>
+											{/if}
+
 											{#if canPerformAction('start', container.state)}
 												<button
 													type="button"

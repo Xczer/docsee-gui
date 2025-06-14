@@ -29,10 +29,23 @@ pub fn run() {
             remove_container_cmd,
             kill_container_cmd,
             get_container_stats_cmd,
+            get_container_logs_cmd,
+            exec_container_cmd,
             // Image commands
             get_images,
             get_image_details,
             remove_image_cmd,
+            pull_image_cmd,
+            // Network commands
+            get_networks,
+            get_network_details,
+            remove_network_cmd,
+            prune_networks_cmd,
+            // Volume commands
+            get_volumes,
+            get_volume_details,
+            remove_volume_cmd,
+            prune_volumes_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

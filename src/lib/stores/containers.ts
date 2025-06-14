@@ -1,5 +1,5 @@
 import { writable, type Writable } from 'svelte/store';
-import type { Container, ContainerInspect, ContainerStats } from '../types/container.js';
+import type { Container, ContainerInspect, ContainerStats, ContainerLogLine } from '../types/container.js';
 import { 
   getContainers, 
   getContainerDetails, 
@@ -9,6 +9,7 @@ import {
   removeContainer, 
   killContainer,
   getContainerStats,
+  getContainerLogs,
   handleTauriError 
 } from '../services/tauri-commands.js';
 

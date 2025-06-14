@@ -7,7 +7,8 @@ import type {
 import type { 
   Container, 
   ContainerInspect, 
-  ContainerStats 
+  ContainerStats,
+  ContainerLogLine 
 } from '../types/container.js';
 import type { 
   ImageSummary, 
@@ -72,6 +73,22 @@ export async function getContainerStats(id: string): Promise<ContainerStats> {
   return await invoke('get_container_stats_cmd', { id });
 }
 
+export async function getContainerLogs(
+  id: string,
+  follow?: boolean,
+  tail?: string,
+  since?: string,
+  until?: string
+): Promise<ContainerLogLine[]> {
+  return await invoke('get_container_logs_cmd', { 
+    id, 
+    follow, 
+    tail, 
+    since, 
+    until 
+  });
+}
+
 // Image API
 export async function getImages(all: boolean = false): Promise<ImageSummary[]> {
   return await invoke('get_images', { all });
@@ -83,6 +100,10 @@ export async function getImageDetails(id: string): Promise<ImageInspect> {
 
 export async function removeImage(id: string, force: boolean = false, noPrune: boolean = false): Promise<void> {
   return await invoke('remove_image_cmd', { id, force, noPrune });
+}
+
+export async function pullImage(name: string, tag?: string): Promise<void> {
+  return await invoke('pull_image_cmd', { name, tag });
 }
 
 // Helper function to handle API errors
