@@ -1,13 +1,19 @@
 import { defineConfig } from "vite";
 import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from '@tailwindcss/vite';
+import path from 'path';
 
-// @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
   plugins: [tailwindcss(), sveltekit(),],
+  resolve: {
+    alias: {
+      $lib: path.resolve('./src/lib'),
+      $components: path.resolve('./src/lib/components')
+    }
+  },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
