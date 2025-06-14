@@ -15,6 +15,19 @@
 		isLoadingContainers 
 	} from '$lib/stores/containers.js';
 	import { formatRelativeTime, getContainerDisplayName, getContainerStatusColor } from '$lib/utils/formatters.js';
+	import { 
+		Container, 
+		Image, 
+		Network, 
+		HardDrive, 
+		Play, 
+		Square, 
+		ArrowUpRight, 
+		AlertTriangle,
+		TrendingUp,
+		Activity,
+		Zap
+	} from 'lucide-svelte';
 
 	let mounted = false;
 
@@ -48,221 +61,249 @@
 	$: recentContainers = [...$containers]
 		.sort((a, b) => b.created - a.created)
 		.slice(0, 5);
+
+	// Stats cards data
+	$: statsCards = [
+		{
+			title: 'Total Containers',
+			value: $isLoadingStats || $isLoadingContainers ? null : $systemStats?.containers_total ?? $containers.length,
+			icon: Container,
+			color: 'text-blue-600 dark:text-blue-400',
+			bgColor: 'bg-blue-100 dark:bg-blue-900/20',
+			href: '/containers'
+		},
+		{
+			title: 'Running',
+			value: $isLoadingStats || $isLoadingContainers ? null : $systemStats?.containers_running ?? runningContainers.length,
+			icon: Play,
+			color: 'text-green-600 dark:text-green-400',
+			bgColor: 'bg-green-100 dark:bg-green-900/20',
+			href: '/containers'
+		},
+		{
+			title: 'Stopped',
+			value: $isLoadingStats || $isLoadingContainers ? null : $systemStats?.containers_stopped ?? stoppedContainers.length,
+			icon: Square,
+			color: 'text-gray-600 dark:text-gray-400',
+			bgColor: 'bg-gray-100 dark:bg-gray-900/20',
+			href: '/containers'
+		},
+		{
+			title: 'Images',
+			value: $isLoadingStats ? null : $systemStats?.images_total ?? '-',
+			icon: Image,
+			color: 'text-purple-600 dark:text-purple-400',
+			bgColor: 'bg-purple-100 dark:bg-purple-900/20',
+			href: '/images'
+		}
+	];
+
+	// Quick actions
+	const quickActions = [
+		{ label: 'Containers', icon: Container, href: '/containers', description: 'Manage containers' },
+		{ label: 'Images', icon: Image, href: '/images', description: 'Browse images' },
+		{ label: 'Networks', icon: Network, href: '/networks', description: 'Network settings' },
+		{ label: 'Volumes', icon: HardDrive, href: '/volumes', description: 'Storage volumes' }
+	];
+
+	function getStatusBadgeClass(state: string) {
+		switch (state) {
+			case 'running':
+				return 'badge badge-default';
+			case 'exited':
+			case 'created':
+				return 'badge badge-secondary';
+			case 'paused':
+				return 'badge badge-outline';
+			default:
+				return 'badge badge-secondary';
+		}
+	}
+
+	function getStatusColor(state: string) {
+		switch (state) {
+			case 'running':
+				return 'text-green-600 dark:text-green-400';
+			case 'exited':
+			case 'created':
+				return 'text-gray-600 dark:text-gray-400';
+			case 'paused':
+				return 'text-yellow-600 dark:text-yellow-400';
+			default:
+				return 'text-gray-600 dark:text-gray-400';
+		}
+	}
 </script>
 
-<div style="padding: 1rem;">
+<svelte:head>
+	<title>Dashboard - DocSee</title>
+</svelte:head>
+
+<div class="space-y-8">
 	<!-- Page Header -->
-	<div style="margin-bottom: 2rem;">
-		<h1 style="font-size: 2rem; font-weight: bold; color: #111827; margin-bottom: 0.25rem;">
+	<div class="space-y-2">
+		<h1 class="text-3xl font-bold tracking-tight text-foreground">
 			Dashboard
 		</h1>
-		<p style="color: #6b7280;">Overview of your Docker environment</p>
+		<p class="text-muted-foreground">
+			Overview of your Docker environment
+		</p>
 	</div>
 
 	{#if !$connectionStatus.connected}
 		<!-- Connection Required Notice -->
-		<div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 0.5rem; padding: 1rem; margin-bottom: 2rem;">
-			<div style="display: flex; align-items: center;">
-				<svg style="width: 1.25rem; height: 1.25rem; color: #f59e0b; margin-right: 0.75rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
-				</svg>
-				<div>
-					<h3 style="font-size: 0.875rem; font-weight: 600; color: #92400e; margin-bottom: 0.25rem;">
-						Docker Connection Required
-					</h3>
-					<p style="font-size: 0.875rem; color: #b45309; margin: 0;">
-						Please ensure Docker is running and try refreshing the page. The application will automatically attempt to connect.
-					</p>
-				</div>
+		<div class="alert border-yellow-200 bg-yellow-50 dark:border-yellow-900/50 dark:bg-yellow-900/10">
+			<AlertTriangle class="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
+			<div class="alert-title text-yellow-800 dark:text-yellow-200">Docker Connection Required</div>
+			<div class="alert-description text-yellow-700 dark:text-yellow-300">
+				Please ensure Docker is running and try refreshing the page. The application will automatically attempt to connect.
 			</div>
 		</div>
 	{:else}
 		<!-- Dashboard Content -->
-		<div style="display: flex; flex-direction: column; gap: 1.5rem;">
+		<div class="space-y-8">
 			<!-- Stats Cards -->
-			<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem;">
-				<!-- Total Containers -->
-				<div style="background-color: white; padding: 1.25rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-					<div style="display: flex; align-items: center;">
-						<div style="width: 2rem; height: 2rem; background-color: #3b82f6; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; margin-right: 1.25rem;">
-							<svg style="width: 1.25rem; height: 1.25rem; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14-7H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2z" />
-							</svg>
-						</div>
-						<div>
-							<div style="font-size: 0.875rem; font-weight: 500; color: #6b7280;">
-								Total Containers
+			<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+				{#each statsCards as card}
+					<div class="card group cursor-pointer transition-all hover:shadow-md dark:hover:shadow-lg hover:scale-[1.02]">
+						<div class="card-content p-6">
+							<div class="flex items-center justify-between">
+								<div class="space-y-2">
+									<p class="text-sm font-medium text-muted-foreground">
+										{card.title}
+									</p>
+									<div class="text-2xl font-bold text-foreground">
+										{#if card.value === null}
+											<div class="skeleton h-8 w-12"></div>
+										{:else}
+											{card.value}
+										{/if}
+									</div>
+								</div>
+								<div class="flex h-12 w-12 items-center justify-center rounded-lg {card.bgColor}">
+									<svelte:component this={card.icon} class="h-6 w-6 {card.color}" />
+								</div>
 							</div>
-							<div style="font-size: 1.125rem; font-weight: 600; color: #111827;">
-								{$isLoadingStats || $isLoadingContainers ? '...' : $systemStats?.containers_total ?? $containers.length}
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Running Containers -->
-				<div style="background-color: white; padding: 1.25rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-					<div style="display: flex; align-items: center;">
-						<div style="width: 2rem; height: 2rem; background-color: #10b981; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; margin-right: 1.25rem;">
-							<svg style="width: 1.25rem; height: 1.25rem; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M19 10a9 9 0 11-18 0 9 9 0 0118 0z" />
-							</svg>
-						</div>
-						<div>
-							<div style="font-size: 0.875rem; font-weight: 500; color: #6b7280;">
-								Running
-							</div>
-							<div style="font-size: 1.125rem; font-weight: 600; color: #10b981;">
-								{$isLoadingStats || $isLoadingContainers ? '...' : $systemStats?.containers_running ?? runningContainers.length}
+							<div class="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+								<TrendingUp class="h-3 w-3" />
+								<a href={card.href} class="hover:text-foreground transition-colors">
+									View details
+									<ArrowUpRight class="ml-1 h-3 w-3 inline" />
+								</a>
 							</div>
 						</div>
 					</div>
-				</div>
-
-				<!-- Stopped Containers -->
-				<div style="background-color: white; padding: 1.25rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-					<div style="display: flex; align-items: center;">
-						<div style="width: 2rem; height: 2rem; background-color: #6b7280; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; margin-right: 1.25rem;">
-							<svg style="width: 1.25rem; height: 1.25rem; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10h6v4H9z" />
-							</svg>
-						</div>
-						<div>
-							<div style="font-size: 0.875rem; font-weight: 500; color: #6b7280;">
-								Stopped
-							</div>
-							<div style="font-size: 1.125rem; font-weight: 600; color: #6b7280;">
-								{$isLoadingStats || $isLoadingContainers ? '...' : $systemStats?.containers_stopped ?? stoppedContainers.length}
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Images -->
-				<div style="background-color: white; padding: 1.25rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-					<div style="display: flex; align-items: center;">
-						<div style="width: 2rem; height: 2rem; background-color: #8b5cf6; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; margin-right: 1.25rem;">
-							<svg style="width: 1.25rem; height: 1.25rem; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-							</svg>
-						</div>
-						<div>
-							<div style="font-size: 0.875rem; font-weight: 500; color: #6b7280;">
-								Images
-							</div>
-							<div style="font-size: 1.125rem; font-weight: 600; color: #111827;">
-								{$isLoadingStats ? '...' : $systemStats?.images_total ?? '-'}
-							</div>
-						</div>
-					</div>
-				</div>
+				{/each}
 			</div>
 
-			<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+			<div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
 				<!-- Quick Actions -->
-				<div style="background-color: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-					<h3 style="font-size: 1.125rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">
-						Quick Actions
-					</h3>
-					<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-						<a
-							href="/containers"
-							style="display: flex; align-items: center; justify-content: center; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; color: #374151; background-color: white; text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: all 0.2s;"
-						>
-							<svg style="width: 1rem; height: 1rem; margin-right: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14-7H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2z" />
-							</svg>
-							Containers
-						</a>
-
-						<a
-							href="/images"
-							style="display: flex; align-items: center; justify-content: center; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; color: #374151; background-color: white; text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: all 0.2s;"
-						>
-							<svg style="width: 1rem; height: 1rem; margin-right: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-							</svg>
-							Images
-						</a>
-
-						<a
-							href="/networks"
-							style="display: flex; align-items: center; justify-content: center; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; color: #374151; background-color: white; text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: all 0.2s;"
-						>
-							<svg style="width: 1rem; height: 1rem; margin-right: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-2.219 5.781M15.219 7.219A9 9 0 0115.219 7.219M3 12a9 9 0 012.219-5.781m0 11.562A9 9 0 013 12m6 0a3 3 0 106 0 3 3 0 00-6 0zm6 0a3 3 0 106 0 3 3 0 00-6 0z" />
-							</svg>
-							Networks
-						</a>
-
-						<a
-							href="/volumes"
-							style="display: flex; align-items: center; justify-content: center; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; color: #374151; background-color: white; text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: all 0.2s;"
-						>
-							<svg style="width: 1rem; height: 1rem; margin-right: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
-							</svg>
-							Volumes
-						</a>
+				<div class="card">
+					<div class="card-header">
+						<div class="card-title flex items-center gap-2">
+							<Zap class="h-5 w-5 text-primary" />
+							Quick Actions
+						</div>
+						<div class="card-description">
+							Navigate to main features
+						</div>
+					</div>
+					<div class="card-content space-y-4">
+						{#each quickActions as action}
+							<button 
+								class="btn btn-ghost w-full justify-start h-auto p-4 group"
+								on:click={() => window.location.href = action.href}
+							>
+								<div class="flex items-center gap-4 w-full">
+									<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-muted group-hover:bg-primary/10 transition-colors">
+										<svelte:component this={action.icon} class="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+									</div>
+									<div class="flex-1 text-left">
+										<div class="font-medium text-foreground group-hover:text-primary transition-colors">
+											{action.label}
+										</div>
+										<div class="text-sm text-muted-foreground">
+											{action.description}
+										</div>
+									</div>
+									<ArrowUpRight class="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+								</div>
+							</button>
+						{/each}
 					</div>
 				</div>
 
 				<!-- Recent Containers -->
-				<div style="background-color: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-					<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-						<h3 style="font-size: 1.125rem; font-weight: 600; color: #111827;">
-							Recent Containers
-						</h3>
-						<a
-							href="/containers"
-							style="font-size: 0.875rem; color: #3b82f6; text-decoration: none; font-weight: 500;"
-						>
-							View all →
-						</a>
-					</div>
-					
-					{#if $isLoadingContainers}
-						<div style="text-align: center; padding: 2rem; color: #6b7280;">
-							Loading containers...
-						</div>
-					{:else if recentContainers.length === 0}
-						<div style="text-align: center; padding: 2rem; color: #6b7280;">
-							No containers found
-						</div>
-					{:else}
-						<div style="space-y: 0.75rem;">
-							{#each recentContainers as container}
-								<div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border-radius: 0.375rem; background-color: #f9fafb;">
-									<div style="flex: 1; min-width: 0;">
-										<div style="font-size: 0.875rem; font-weight: 500; color: #111827; truncate;">
-											{getContainerDisplayName(container)}
-										</div>
-										<div style="font-size: 0.75rem; color: #6b7280; truncate;">
-											{container.image}
-										</div>
-									</div>
-									<div style="display: flex; align-items: center; gap: 0.5rem;">
-										<span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 9999px; font-weight: 500; {getContainerStatusColor(container.state)}">
-											{container.state}
-										</span>
-										<span style="font-size: 0.75rem; color: #6b7280;">
-											{formatRelativeTime(container.created)}
-										</span>
-									</div>
+				<div class="card xl:col-span-2">
+					<div class="card-header">
+						<div class="flex items-center justify-between">
+							<div class="space-y-1">
+								<div class="card-title flex items-center gap-2">
+									<Activity class="h-5 w-5 text-primary" />
+									Recent Containers
 								</div>
-							{/each}
+								<div class="card-description">
+									Latest container activity
+								</div>
+							</div>
+							<button class="btn btn-outline btn-sm" on:click={() => window.location.href = '/containers'}>
+								View all
+								<ArrowUpRight class="ml-2 h-4 w-4" />
+							</button>
 						</div>
-					{/if}
+					</div>
+					<div class="card-content">
+						{#if $isLoadingContainers}
+							<div class="space-y-4">
+								{#each Array(3) as _}
+									<div class="flex items-center gap-4">
+										<div class="skeleton h-10 w-10 rounded-lg"></div>
+										<div class="flex-1 space-y-2">
+											<div class="skeleton h-4 w-32"></div>
+											<div class="skeleton h-3 w-48"></div>
+										</div>
+										<div class="skeleton h-6 w-16 rounded-full"></div>
+									</div>
+								{/each}
+							</div>
+						{:else if recentContainers.length === 0}
+							<div class="flex flex-col items-center justify-center py-12 text-center">
+								<Container class="h-12 w-12 text-muted-foreground/50 mb-4" />
+								<h3 class="font-medium text-foreground mb-2">No containers found</h3>
+								<p class="text-sm text-muted-foreground">
+									No containers exist yet.
+								</p>
+							</div>
+						{:else}
+							<div class="space-y-4">
+								{#each recentContainers as container}
+									<div class="flex items-center gap-4 group hover:bg-muted/50 rounded-lg p-3 -m-3 transition-colors">
+										<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+											<Container class="h-5 w-5 {getStatusColor(container.state)}" />
+										</div>
+										<div class="flex-1 min-w-0">
+											<div class="font-medium text-foreground truncate">
+												{getContainerDisplayName(container)}
+											</div>
+											<div class="text-sm text-muted-foreground truncate">
+												{container.image}
+											</div>
+										</div>
+										<div class="flex items-center gap-3">
+											<span class="{getStatusBadgeClass(container.state)} text-xs">
+												{container.state}
+											</span>
+											<div class="text-xs text-muted-foreground">
+												{formatRelativeTime(container.created)}
+											</div>
+										</div>
+									</div>
+								{/each}
+							</div>
+						{/if}
+					</div>
 				</div>
 			</div>
 		</div>
 	{/if}
 </div>
-
-<style>
-	a:hover {
-		background-color: #f3f4f6 !important;
-		border-color: #9ca3af !important;
-	}
-</style>

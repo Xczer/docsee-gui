@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { theme, setTheme, type Theme } from '$lib/stores/theme.js';
-	import { Sun, Moon, Monitor } from 'lucide-svelte';
+	import { Sun, Moon, Monitor, ChevronDown } from 'lucide-svelte';
+	import { clickOutside } from '$lib/utils/click-outside.js';
 
 	export let variant: 'button' | 'dropdown' = 'dropdown';
 	export let size: 'sm' | 'md' | 'lg' = 'md';
@@ -32,69 +33,69 @@
 		return themes.find(t => t.value === themeValue)?.icon || Monitor;
 	}
 
-	// Close dropdown when clicking outside
-	function handleClickOutside(event: MouseEvent) {
-		if (showDropdown && !(event.target as Element)?.closest('.theme-dropdown')) {
-			showDropdown = false;
-		}
+	function handleClickOutside() {
+		showDropdown = false;
 	}
 
 	// Size classes
-	const sizeClasses = {
-		sm: 'w-8 h-8',
-		md: 'w-10 h-10',
-		lg: 'w-12 h-12'
+	const buttonSizes = {
+		sm: 'h-8 w-8',
+		md: 'h-9 w-9',
+		lg: 'h-10 w-10'
 	};
 
-	const iconSizeClasses = {
-		sm: 'w-4 h-4',
-		md: 'w-5 h-5',
-		lg: 'w-6 h-6'
+	const iconSizes = {
+		sm: 'h-3 w-3',
+		md: 'h-4 w-4',
+		lg: 'h-5 w-5'
 	};
 </script>
 
-<svelte:window on:click={handleClickOutside} />
-
-<div class="theme-dropdown relative">
-	{#if variant === 'button'}
-		<!-- Simple toggle button -->
-		<button
+{#if variant === 'button'}
+	<!-- Simple toggle button -->
+	<button
+		class="btn btn-outline btn-icon {buttonSizes[size]}"
+		on:click={handleToggle}
+		title="Toggle theme"
+	>
+		<svelte:component this={getIconComponent($theme)} class={iconSizes[size]} />
+		<span class="sr-only">Toggle theme</span>
+	</button>
+{:else}
+	<!-- Dropdown button -->
+	<div class="relative" use:clickOutside={handleClickOutside}>
+		<button 
+			class="btn btn-outline btn-icon {buttonSizes[size]}"
 			on:click={handleToggle}
-			class="flex items-center justify-center {sizeClasses[size]} rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-			title="Toggle theme"
-		>
-			<svelte:component this={getIconComponent($theme)} class={iconSizeClasses[size]} />
-		</button>
-	{:else}
-		<!-- Dropdown button -->
-		<button
-			on:click={handleToggle}
-			class="flex items-center justify-center {sizeClasses[size]} rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
 			title="Change theme"
 		>
-			<svelte:component this={getIconComponent($theme)} class={iconSizeClasses[size]} />
+			<svelte:component this={getIconComponent($theme)} class={iconSizes[size]} />
+			<span class="sr-only">Change theme</span>
 		</button>
 
 		{#if showDropdown}
 			<!-- Dropdown menu -->
-			<div class="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
-				<div class="py-1">
-					{#each themes as themeOption}
-						<button
-							on:click={() => handleThemeSelect(themeOption.value)}
-							class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors {$theme === themeOption.value ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : ''}"
-						>
-							<svelte:component this={themeOption.icon} class="w-4 h-4" />
-							<span>{themeOption.label}</span>
-							{#if $theme === themeOption.value}
-								<svg class="w-4 h-4 ml-auto text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-									<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-								</svg>
-							{/if}
-						</button>
-					{/each}
+			<div class="absolute right-0 top-full mt-2 w-44 bg-popover border border-border rounded-md shadow-md z-50 py-1">
+				<div class="px-2 py-1.5 text-sm font-medium text-muted-foreground">
+					Theme
 				</div>
+				<div class="h-px bg-border mx-1 my-1"></div>
+				{#each themes as themeOption}
+					<button
+						type="button"
+						on:click={() => handleThemeSelect(themeOption.value)}
+						class="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-foreground hover:bg-accent rounded-sm mx-1 transition-colors {$theme === themeOption.value ? 'bg-accent' : ''}"
+					>
+						<svelte:component this={themeOption.icon} class="h-4 w-4" />
+						<span>{themeOption.label}</span>
+						{#if $theme === themeOption.value}
+							<svg class="ml-auto h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+								<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+							</svg>
+						{/if}
+					</button>
+				{/each}
 			</div>
 		{/if}
-	{/if}
-</div>
+	</div>
+{/if}

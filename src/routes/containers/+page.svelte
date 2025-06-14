@@ -22,6 +22,22 @@
 		formatRelativeTime, 
 		formatContainerPorts 
 	} from '$lib/utils/formatters.js';
+	import { 
+		Container,
+		Search,
+		RefreshCw,
+		AlertTriangle,
+		Play,
+		Square,
+		RotateCcw,
+		Trash2,
+		FileText,
+		BarChart3,
+		Terminal,
+		Filter,
+		Clock,
+		Image as ImageIcon
+	} from 'lucide-svelte';
 
 	let mounted = false;
 
@@ -81,276 +97,325 @@
 				return false;
 		}
 	}
+
+	function getStatusBadgeClass(state: string) {
+		switch (state) {
+			case 'running':
+				return 'badge badge-default';
+			case 'exited':
+			case 'created':
+				return 'badge badge-secondary';
+			case 'paused':
+				return 'badge badge-outline';
+			default:
+				return 'badge badge-secondary';
+		}
+	}
+
+	function getStatusIcon(state: string) {
+		switch (state) {
+			case 'running':
+				return Play;
+			case 'exited':
+			case 'created':
+				return Square;
+			case 'paused':
+				return Square;
+			default:
+				return Square;
+		}
+	}
+
+	const filterOptions = [
+		{ value: 'all', label: 'All', count: $sortedContainers.length },
+		{ value: 'running', label: 'Running', count: $sortedContainers.filter(c => c.state === 'running').length },
+		{ value: 'stopped', label: 'Stopped', count: $sortedContainers.filter(c => c.state === 'exited' || c.state === 'created').length }
+	];
 </script>
 
-<div style="padding: 1rem;">
+<svelte:head>
+	<title>Containers - DocSee</title>
+</svelte:head>
+
+<div class="space-y-6">
 	<!-- Page Header -->
-	<div style="margin-bottom: 2rem;">
-		<h1 style="font-size: 2rem; font-weight: bold; color: #111827; margin-bottom: 0.25rem;">
+	<div class="space-y-2">
+		<h1 class="text-3xl font-bold tracking-tight text-foreground">
 			Containers
 		</h1>
-		<p style="color: #6b7280;">Manage your Docker containers</p>
+		<p class="text-muted-foreground">
+			Manage your Docker containers
+		</p>
 	</div>
 
 	{#if !$connectionStatus.connected}
 		<!-- Connection Required Notice -->
-		<div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 0.5rem; padding: 1rem;">
-			<div style="display: flex; align-items: center;">
-				<svg style="width: 1.25rem; height: 1.25rem; color: #f59e0b; margin-right: 0.75rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
-				</svg>
-				<div>
-					<h3 style="font-size: 0.875rem; font-weight: 600; color: #92400e; margin-bottom: 0.25rem;">
-						Docker Connection Required
-					</h3>
-					<p style="font-size: 0.875rem; color: #b45309; margin: 0;">
-						Connect to Docker to view and manage containers.
-					</p>
-				</div>
+		<div class="alert border-yellow-200 bg-yellow-50 dark:border-yellow-900/50 dark:bg-yellow-900/10">
+			<AlertTriangle class="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
+			<div class="alert-title text-yellow-800 dark:text-yellow-200">Docker Connection Required</div>
+			<div class="alert-description text-yellow-700 dark:text-yellow-300">
+				Connect to Docker to view and manage containers.
 			</div>
 		</div>
 	{:else}
 		<!-- Error Banner -->
 		{#if $containerError}
-			<div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
-				<div style="display: flex; align-items: center; gap: 0.75rem;">
-					<svg style="width: 1.25rem; height: 1.25rem; color: #ef4444;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
-					</svg>
-					<span style="font-size: 0.875rem; color: #dc2626;">
-						{$containerError}
-					</span>
-				</div>
+			<div class="alert alert-destructive">
+				<AlertTriangle class="h-4 w-4" />
+				<div class="alert-title">Error</div>
+				<div class="alert-description">{$containerError}</div>
 			</div>
 		{/if}
 
-		<!-- Filters and Search -->
-		<div style="background-color: white; padding: 1rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1.5rem;">
-			<div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-				<!-- Filter Buttons -->
-				<div style="display: flex; gap: 0.5rem;">
-					<button
-						type="button"
-						style="padding: 0.5rem 1rem; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 500; border: 1px solid #d1d5db; background-color: {$containerFilter === 'all' ? '#3b82f6' : 'white'}; color: {$containerFilter === 'all' ? 'white' : '#374151'}; cursor: pointer; transition: all 0.2s;"
-						on:click={() => containerFilter.set('all')}
-					>
-						All
-					</button>
-					<button
-						type="button"
-						style="padding: 0.5rem 1rem; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 500; border: 1px solid #d1d5db; background-color: {$containerFilter === 'running' ? '#10b981' : 'white'}; color: {$containerFilter === 'running' ? 'white' : '#374151'}; cursor: pointer; transition: all 0.2s;"
-						on:click={() => containerFilter.set('running')}
-					>
-						Running
-					</button>
-					<button
-						type="button"
-						style="padding: 0.5rem 1rem; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 500; border: 1px solid #d1d5db; background-color: {$containerFilter === 'stopped' ? '#6b7280' : 'white'}; color: {$containerFilter === 'stopped' ? 'white' : '#374151'}; cursor: pointer; transition: all 0.2s;"
-						on:click={() => containerFilter.set('stopped')}
-					>
-						Stopped
-					</button>
-				</div>
+		<!-- Filters and Search Card -->
+		<div class="card">
+			<div class="card-content p-6">
+				<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+					<!-- Filter Buttons -->
+					<div class="flex gap-2 flex-wrap">
+						{#each filterOptions as option}
+							<button
+								class="btn {$containerFilter === option.value ? 'btn-default' : 'btn-outline'} btn-sm gap-2"
+								on:click={() => containerFilter.set(option.value)}
+							>
+								<Filter class="h-3 w-3" />
+								{option.label}
+								<span class="badge badge-secondary ml-1 text-xs">
+									{option.count}
+								</span>
+							</button>
+						{/each}
+					</div>
 
-				<!-- Search -->
-				<div style="flex: 1; max-width: 24rem;">
-					<input
-						type="text"
-						placeholder="Search containers..."
-						bind:value={$containerSearchTerm}
-						style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-size: 0.875rem; outline: none; transition: border-color 0.2s;"
-					>
+					<!-- Search and Refresh -->
+					<div class="flex gap-2 flex-1 max-w-md">
+						<div class="relative flex-1">
+							<Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<input
+								type="text"
+								placeholder="Search containers..."
+								bind:value={$containerSearchTerm}
+								class="input pl-10"
+							/>
+						</div>
+						<button
+							class="btn btn-outline btn-icon"
+							on:click={() => loadContainers()}
+							disabled={$isLoadingContainers}
+							title="Refresh containers"
+						>
+							<RefreshCw class="h-4 w-4 {$isLoadingContainers ? 'animate-spin' : ''}" />
+						</button>
+					</div>
 				</div>
-
-				<!-- Refresh Button -->
-				<button
-					type="button"
-					style="padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; background-color: white; color: #374151; cursor: pointer; transition: all 0.2s;"
-					on:click={() => loadContainers()}
-					disabled={$isLoadingContainers}
-				>
-					<svg style="width: 1.25rem; height: 1.25rem; {$isLoadingContainers ? 'animation: spin 1s linear infinite;' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-					</svg>
-				</button>
 			</div>
 		</div>
 
-		<!-- Containers List -->
-		<div style="background-color: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">
+		<!-- Containers Table -->
+		<div class="card">
 			{#if $isLoadingContainers}
-				<div style="padding: 3rem; text-align: center; color: #6b7280;">
-					<svg style="width: 2rem; height: 2rem; margin: 0 auto 1rem; animation: spin 1s linear infinite;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-					</svg>
-					<p>Loading containers...</p>
+				<div class="card-content p-6">
+					<div class="space-y-4">
+						<div class="flex items-center justify-center py-8">
+							<RefreshCw class="h-6 w-6 animate-spin text-muted-foreground mr-2" />
+							<span class="text-muted-foreground">Loading containers...</span>
+						</div>
+						{#each Array(3) as _}
+							<div class="flex items-center gap-4 p-4 border rounded-lg">
+								<div class="skeleton h-10 w-10 rounded"></div>
+								<div class="flex-1 space-y-2">
+									<div class="skeleton h-4 w-48"></div>
+									<div class="skeleton h-3 w-32"></div>
+								</div>
+								<div class="skeleton h-6 w-20 rounded-full"></div>
+								<div class="flex gap-2">
+									<div class="skeleton h-8 w-16"></div>
+									<div class="skeleton h-8 w-16"></div>
+								</div>
+							</div>
+						{/each}
+					</div>
 				</div>
 			{:else if $sortedContainers.length === 0}
-				<div style="padding: 3rem; text-align: center; color: #6b7280;">
-					<svg style="width: 3rem; height: 3rem; margin: 0 auto 1rem; color: #d1d5db;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14-7H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2z" />
-					</svg>
-					<p style="font-size: 1.125rem; font-weight: 500; margin-bottom: 0.5rem;">No containers found</p>
-					<p style="font-size: 0.875rem;">
-						{$containerFilter === 'all' ? 'No containers exist yet.' : `No ${$containerFilter} containers found.`}
-					</p>
+				<div class="card-content p-12">
+					<div class="flex flex-col items-center justify-center text-center space-y-4">
+						<Container class="h-16 w-16 text-muted-foreground/50" />
+						<div class="space-y-2">
+							<h3 class="text-lg font-medium text-foreground">No containers found</h3>
+							<p class="text-muted-foreground">
+								{$containerFilter === 'all' ? 'No containers exist yet.' : `No ${$containerFilter} containers found.`}
+							</p>
+						</div>
+					</div>
 				</div>
 			{:else}
-				<div style="overflow-x: auto;">
-					<table style="width: 100%; border-collapse: collapse;">
-						<thead style="background-color: #f9fafb;">
-							<tr>
-								<th style="padding: 0.75rem 1rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.05em;">Name</th>
-								<th style="padding: 0.75rem 1rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.05em;">Image</th>
-								<th style="padding: 0.75rem 1rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.05em;">Status</th>
-								<th style="padding: 0.75rem 1rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.05em;">Ports</th>
-								<th style="padding: 0.75rem 1rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.05em;">Created</th>
-								<th style="padding: 0.75rem 1rem; text-align: right; font-size: 0.75rem; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.05em;">Actions</th>
-							</tr>
-						</thead>
-						<tbody style="background-color: white; divide-y: 1px solid #e5e7eb;">
-							{#each $sortedContainers as container}
-								<tr style="border-bottom: 1px solid #e5e7eb;">
-									<td style="padding: 1rem; white-space: nowrap;">
-										<div style="display: flex; align-items: center;">
-											<div>
-												<div style="font-size: 0.875rem; font-weight: 500; color: #111827;">
-													{getContainerDisplayName(container)}
+				<div class="rounded-lg border">
+					<div class="overflow-x-auto">
+						<table class="w-full border-collapse">
+							<thead class="bg-muted/50">
+								<tr class="border-b">
+									<th class="text-left p-4 font-medium text-sm text-muted-foreground">Container</th>
+									<th class="text-left p-4 font-medium text-sm text-muted-foreground">Image</th>
+									<th class="text-left p-4 font-medium text-sm text-muted-foreground">Status</th>
+									<th class="text-left p-4 font-medium text-sm text-muted-foreground">Ports</th>
+									<th class="text-left p-4 font-medium text-sm text-muted-foreground">Created</th>
+									<th class="text-right p-4 font-medium text-sm text-muted-foreground">Actions</th>
+								</tr>
+							</thead>
+							<tbody class="bg-background">
+								{#each $sortedContainers as container}
+									<tr class="border-b hover:bg-muted/50 transition-colors">
+										<!-- Container Info -->
+										<td class="p-4">
+											<div class="flex items-center gap-3">
+												<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+													<svelte:component this={getStatusIcon(container.state)} class="h-5 w-5 text-muted-foreground" />
 												</div>
-												<div style="font-size: 0.75rem; color: #6b7280; font-family: monospace;">
-													{container.id.slice(0, 12)}
+												<div class="min-w-0">
+													<div class="font-medium text-foreground truncate">
+														{getContainerDisplayName(container)}
+													</div>
+													<div class="text-sm text-muted-foreground font-mono">
+														{container.id.slice(0, 12)}
+													</div>
 												</div>
 											</div>
-										</div>
-									</td>
-									<td style="padding: 1rem;">
-										<div style="font-size: 0.875rem; color: #111827;">
-											{container.image}
-										</div>
-									</td>
-									<td style="padding: 1rem;">
-										<span style="display: inline-flex; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; {getContainerStatusColor(container.state)}">
-											{container.state}
-										</span>
-									</td>
-									<td style="padding: 1rem;">
-										<div style="font-size: 0.875rem; color: #6b7280; font-family: monospace;">
-											{formatContainerPorts(container.ports)}
-										</div>
-									</td>
-									<td style="padding: 1rem;">
-										<div style="font-size: 0.875rem; color: #6b7280;">
-											{formatRelativeTime(container.created)}
-										</div>
-									</td>
-									<td style="padding: 1rem; text-align: right;">
-										<div style="display: flex; gap: 0.25rem; justify-content: flex-end;">
-											<!-- View Logs Button -->
-											<a
-												href="/containers/{container.id}/logs"
-												style="padding: 0.25rem 0.5rem; border: 1px solid #6b7280; border-radius: 0.25rem; background-color: white; color: #6b7280; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center;"
-												title="View logs"
-											>
-												<svg style="width: 0.75rem; height: 0.75rem; margin-right: 0.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-												</svg>
-												Logs
-											</a>
-											
-											<!-- View Stats Button -->
-											<a
-												href="/containers/{container.id}/stats"
-												style="padding: 0.25rem 0.5rem; border: 1px solid #8b5cf6; border-radius: 0.25rem; background-color: white; color: #8b5cf6; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center;"
-												title="View stats"
-											>
-												<svg style="width: 0.75rem; height: 0.75rem; margin-right: 0.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-												</svg>
-												Stats
-											</a>
+										</td>
 
-											<!-- Shell Access Button -->
-											{#if container.state === 'running'}
-												<a
-													href="/containers/{container.id}/shell"
-													style="padding: 0.25rem 0.5rem; border: 1px solid #059669; border-radius: 0.25rem; background-color: white; color: #059669; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center;"
-													title="Access shell"
-												>
-													<svg style="width: 0.75rem; height: 0.75rem; margin-right: 0.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" />
-													</svg>
-													Shell
-												</a>
-											{/if}
+										<!-- Image -->
+										<td class="p-4">
+											<div class="flex items-center gap-2">
+												<ImageIcon class="h-4 w-4 text-muted-foreground" />
+												<span class="text-sm text-foreground truncate">
+													{container.image}
+												</span>
+											</div>
+										</td>
 
-											{#if canPerformAction('start', container.state)}
+										<!-- Status -->
+										<td class="p-4">
+											<span class="{getStatusBadgeClass(container.state)} gap-1">
+												<svelte:component this={getStatusIcon(container.state)} class="h-3 w-3" />
+												{container.state}
+											</span>
+										</td>
+
+										<!-- Ports -->
+										<td class="p-4">
+											<div class="text-sm text-muted-foreground font-mono">
+												{formatContainerPorts(container.ports) || '-'}
+											</div>
+										</td>
+
+										<!-- Created -->
+										<td class="p-4">
+											<div class="flex items-center gap-1 text-sm text-muted-foreground">
+												<Clock class="h-3 w-3" />
+												{formatRelativeTime(container.created)}
+											</div>
+										</td>
+
+										<!-- Actions -->
+										<td class="p-4 text-right">
+											<div class="flex items-center justify-end gap-1">
+												<!-- View Logs -->
 												<button
-													type="button"
-													style="padding: 0.25rem 0.5rem; border: 1px solid #10b981; border-radius: 0.25rem; background-color: white; color: #10b981; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: all 0.2s; disabled:opacity-50;"
-													on:click={() => handleContainerAction('start', container.id)}
-													disabled={isActionInProgress('start', container.id)}
+													class="btn btn-outline btn-sm gap-1"
+													on:click={() => window.location.href = `/containers/${container.id}/logs`}
 												>
-													{isActionInProgress('start', container.id) ? '...' : 'Start'}
+													<FileText class="h-3 w-3" />
+													Logs
 												</button>
-											{/if}
-											{#if canPerformAction('stop', container.state)}
+
+												<!-- View Stats -->
 												<button
-													type="button"
-													style="padding: 0.25rem 0.5rem; border: 1px solid #f59e0b; border-radius: 0.25rem; background-color: white; color: #f59e0b; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: all 0.2s; disabled:opacity-50;"
-													on:click={() => handleContainerAction('stop', container.id)}
-													disabled={isActionInProgress('stop', container.id)}
+													class="btn btn-outline btn-sm gap-1"
+													on:click={() => window.location.href = `/containers/${container.id}/stats`}
 												>
-													{isActionInProgress('stop', container.id) ? '...' : 'Stop'}
+													<BarChart3 class="h-3 w-3" />
+													Stats
 												</button>
-											{/if}
-											{#if canPerformAction('restart', container.state)}
-												<button
-													type="button"
-													style="padding: 0.25rem 0.5rem; border: 1px solid #3b82f6; border-radius: 0.25rem; background-color: white; color: #3b82f6; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: all 0.2s; disabled:opacity-50;"
-													on:click={() => handleContainerAction('restart', container.id)}
-													disabled={isActionInProgress('restart', container.id)}
-												>
-													{isActionInProgress('restart', container.id) ? '...' : 'Restart'}
-												</button>
-											{/if}
-											{#if canPerformAction('remove', container.state)}
-												<button
-													type="button"
-													style="padding: 0.25rem 0.5rem; border: 1px solid #ef4444; border-radius: 0.25rem; background-color: white; color: #ef4444; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: all 0.2s; disabled:opacity-50;"
-													on:click={() => handleContainerAction('remove', container.id)}
-													disabled={isActionInProgress('remove', container.id)}
-												>
-													{isActionInProgress('remove', container.id) ? '...' : 'Remove'}
-												</button>
-											{/if}
-										</div>
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
+
+												<!-- Shell Access -->
+												{#if container.state === 'running'}
+													<button
+														class="btn btn-outline btn-sm gap-1"
+														on:click={() => window.location.href = `/containers/${container.id}/shell`}
+													>
+														<Terminal class="h-3 w-3" />
+														Shell
+													</button>
+												{/if}
+
+												<!-- Container Actions -->
+												{#if canPerformAction('start', container.state)}
+													<button
+														class="btn btn-outline btn-sm gap-1 text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-950"
+														on:click={() => handleContainerAction('start', container.id)}
+														disabled={isActionInProgress('start', container.id)}
+													>
+														{#if isActionInProgress('start', container.id)}
+															<RefreshCw class="h-3 w-3 animate-spin" />
+														{:else}
+															<Play class="h-3 w-3" />
+														{/if}
+														Start
+													</button>
+												{/if}
+
+												{#if canPerformAction('stop', container.state)}
+													<button
+														class="btn btn-outline btn-sm gap-1 text-yellow-600 border-yellow-200 hover:bg-yellow-50 dark:text-yellow-400 dark:border-yellow-800 dark:hover:bg-yellow-950"
+														on:click={() => handleContainerAction('stop', container.id)}
+														disabled={isActionInProgress('stop', container.id)}
+													>
+														{#if isActionInProgress('stop', container.id)}
+															<RefreshCw class="h-3 w-3 animate-spin" />
+														{:else}
+															<Square class="h-3 w-3" />
+														{/if}
+														Stop
+													</button>
+												{/if}
+
+												{#if canPerformAction('restart', container.state)}
+													<button
+														class="btn btn-outline btn-sm gap-1 text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950"
+														on:click={() => handleContainerAction('restart', container.id)}
+														disabled={isActionInProgress('restart', container.id)}
+													>
+														{#if isActionInProgress('restart', container.id)}
+															<RefreshCw class="h-3 w-3 animate-spin" />
+														{:else}
+															<RotateCcw class="h-3 w-3" />
+														{/if}
+														Restart
+													</button>
+												{/if}
+
+												{#if canPerformAction('remove', container.state)}
+													<button
+														class="btn btn-outline btn-sm gap-1 text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950"
+														on:click={() => handleContainerAction('remove', container.id)}
+														disabled={isActionInProgress('remove', container.id)}
+													>
+														{#if isActionInProgress('remove', container.id)}
+															<RefreshCw class="h-3 w-3 animate-spin" />
+														{:else}
+															<Trash2 class="h-3 w-3" />
+														{/if}
+														Remove
+													</button>
+												{/if}
+											</div>
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
 				</div>
 			{/if}
 		</div>
 	{/if}
 </div>
-
-<style>
-	button:hover:not(:disabled) {
-		opacity: 0.8;
-	}
-
-	input:focus {
-		border-color: #3b82f6 !important;
-		box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-	}
-
-	@keyframes spin {
-		from {
-			transform: rotate(0deg);
-		}
-		to {
-			transform: rotate(360deg);
-		}
-	}
-</style>

@@ -4,7 +4,20 @@
 	import { goto } from '$app/navigation';
 	import { invoke } from '@tauri-apps/api/core';
 	import { connectionStatus } from '$lib/stores/docker.js';
-	import { ArrowLeft, Container, AlertCircle, Terminal, Play } from 'lucide-svelte';
+	import { 
+		ArrowLeft, 
+		Container, 
+		AlertCircle, 
+		Terminal, 
+		Play, 
+		FileText, 
+		BarChart3,
+		Activity,
+		Square,
+		Pause,
+		RotateCcw,
+		Trash2
+	} from 'lucide-svelte';
 
 	let containerId: string;
 	let containerName: string = '';
@@ -119,191 +132,270 @@
 		output = '';
 	}
 
-	function getStatusColor(status: string): string {
+	function getStatusBadgeClass(status: string) {
 		switch (status) {
 			case 'running':
-				return 'text-green-600 bg-green-100';
+				return 'px-2 py-1 text-xs font-semibold bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full';
 			case 'exited':
-				return 'text-gray-600 bg-gray-100';
+				return 'px-2 py-1 text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-full';
 			case 'paused':
-				return 'text-yellow-600 bg-yellow-100';
+				return 'px-2 py-1 text-xs font-semibold bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-full';
 			case 'restarting':
-				return 'text-blue-600 bg-blue-100';
+				return 'px-2 py-1 text-xs font-semibold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full';
 			default:
-				return 'text-gray-600 bg-gray-100';
+				return 'px-2 py-1 text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-full';
 		}
 	}
+
+	function getStatusIcon(status: string) {
+		switch (status) {
+			case 'running':
+				return Play;
+			case 'exited':
+				return Square;
+			case 'paused':
+				return Pause;
+			case 'restarting':
+				return RotateCcw;
+			default:
+				return Square;
+		}
+	}
+
+	// Navigation items for container tabs
+	$: containerTabs = [
+		{ 
+			label: 'Logs', 
+			icon: FileText, 
+			href: `/containers/${containerId}/logs`,
+			active: false
+		},
+		{ 
+			label: 'Stats', 
+			icon: BarChart3, 
+			href: `/containers/${containerId}/stats`,
+			active: false
+		},
+		{ 
+			label: 'Shell', 
+			icon: Terminal, 
+			href: `/containers/${containerId}/shell`,
+			active: true,
+			disabled: containerStatus !== 'running'
+		}
+	];
 </script>
 
 <svelte:head>
 	<title>Container Shell{containerName ? ` - ${containerName}` : ''} - DocSee</title>
 </svelte:head>
 
-<div class="p-6 h-full flex flex-col">
+<div class="space-y-6 h-full flex flex-col">
 	<!-- Header -->
-	<div class="flex items-center justify-between mb-6">
-		<div class="flex items-center gap-4">
+	<div class="space-y-4">
+		<!-- Breadcrumb -->
+		<div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
 			<button
+				class="flex items-center gap-2 px-2 py-1 text-sm bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md transition-colors"
 				on:click={handleGoBack}
-				class="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
 			>
-				<ArrowLeft class="w-5 h-5" />
-				<span>Back to Containers</span>
+				<ArrowLeft class="h-4 w-4" />
+				Containers
 			</button>
+			<span>/</span>
+			<span class="text-gray-900 dark:text-gray-100">Shell</span>
+		</div>
 
-			<div class="h-6 w-px bg-gray-300"></div>
-
-			<div class="flex items-center gap-3">
-				<Terminal class="w-6 h-6 text-gray-600" />
-				<div>
-					<h1 class="text-2xl font-bold text-gray-900">
-						Container Shell
-					</h1>
-					<div class="flex items-center gap-2 text-sm text-gray-600">
-						<span class="font-mono">{containerId?.slice(0, 12)}</span>
-						{#if containerName}
-							<span>-</span>
-							<span>{containerName}</span>
-						{/if}
-						{#if containerStatus}
-							<span class="px-2 py-1 rounded-full text-xs font-medium {getStatusColor(containerStatus)}">
+		<!-- Container Info -->
+		<div class="flex items-center justify-between">
+			<div class="flex items-center gap-4">
+				<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
+					<Terminal class="h-6 w-6 text-gray-600 dark:text-gray-400" />
+				</div>
+				<div class="space-y-1">
+					<div class="flex items-center gap-3">
+						<h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+							{loading ? 'Loading...' : containerName || 'Container Shell'}
+						</h1>
+						{#if containerStatus && !loading}
+							<span class="{getStatusBadgeClass(containerStatus)} flex items-center gap-1">
+								<svelte:component this={getStatusIcon(containerStatus)} class="h-3 w-3" />
 								{containerStatus}
 							</span>
 						{/if}
 					</div>
+					<div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+						<Activity class="h-3 w-3" />
+						<span class="font-mono">{containerId?.slice(0, 12)}</span>
+					</div>
 				</div>
 			</div>
-		</div>
 
-		<div class="flex items-center gap-2">
 			<button
+				class="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
 				on:click={clearOutput}
-				class="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
 			>
+				<Trash2 class="h-4 w-4" />
 				Clear
 			</button>
 		</div>
+
+		<!-- Container Navigation Tabs -->
+		<Card.Root>
+			<Card.Content class="p-4">
+				<div class="flex gap-2">
+					{#each containerTabs as tab}
+						<Button
+							variant={tab.active ? 'default' : 'ghost'}
+							size="sm"
+							class="gap-2"
+							disabled={tab.disabled}
+							on:click={() => !tab.disabled && goto(tab.href)}
+						>
+							<svelte:component this={tab.icon} class="h-4 w-4" />
+							{tab.label}
+						</Button>
+					{/each}
+				</div>
+			</Card.Content>
+		</Card.Root>
 	</div>
 
 	<!-- Content -->
 	<div class="flex-1 min-h-0">
 		{#if !$connectionStatus.connected}
-			<div class="h-full flex items-center justify-center">
-				<div class="text-center">
-					<AlertCircle class="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-					<h3 class="text-lg font-semibold text-gray-900 mb-2">Docker Connection Required</h3>
-					<p class="text-gray-600">Please connect to Docker to access container shell.</p>
-				</div>
-			</div>
+			<Alert.Root class="border-yellow-200 bg-yellow-50 dark:border-yellow-900/50 dark:bg-yellow-900/10">
+				<AlertCircle class="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
+				<Alert.Title class="text-yellow-800 dark:text-yellow-200">Docker Connection Required</Alert.Title>
+				<Alert.Description class="text-yellow-700 dark:text-yellow-300">
+					Please connect to Docker to access container shell.
+				</Alert.Description>
+			</Alert.Root>
 		{:else if loading}
-			<div class="h-full flex items-center justify-center">
-				<div class="inline-flex items-center text-gray-600">
-					<svg class="animate-spin -ml-1 mr-3 h-4 w-4" fill="none" viewBox="0 0 24 24">
-						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-						<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-					</svg>
-					Loading container details...
-				</div>
-			</div>
+			<Card.Root class="h-full">
+				<Card.Content class="p-6 h-full flex items-center justify-center">
+					<div class="text-center">
+						<div class="animate-spin mb-4">
+							<Terminal class="h-8 w-8 text-muted-foreground" />
+						</div>
+						<p class="text-muted-foreground">Loading container details...</p>
+					</div>
+				</Card.Content>
+			</Card.Root>
 		{:else if error}
-			<div class="h-full flex items-center justify-center">
-				<div class="text-center">
-					<AlertCircle class="w-12 h-12 text-red-500 mx-auto mb-4" />
-					<h3 class="text-lg font-semibold text-gray-900 mb-2">Failed to Load Container</h3>
-					<p class="text-gray-600 mb-4">{error}</p>
-					<button
-						on:click={loadContainerDetails}
-						class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-					>
+			<Alert.Root variant="destructive">
+				<AlertCircle class="h-4 w-4" />
+				<Alert.Title>Failed to Load Container</Alert.Title>
+				<Alert.Description class="mt-2">
+					<p class="mb-4">{error}</p>
+					<Button variant="outline" size="sm" on:click={loadContainerDetails}>
 						Retry
-					</button>
-				</div>
-			</div>
+					</Button>
+				</Alert.Description>
+			</Alert.Root>
 		{:else if containerStatus !== 'running'}
-			<div class="h-full flex items-center justify-center">
-				<div class="text-center">
-					<Container class="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-					<h3 class="text-lg font-semibold text-gray-900 mb-2">Container Not Running</h3>
-					<p class="text-gray-600">The container must be running to access the shell.</p>
-					<p class="text-sm text-gray-500 mt-2">Current status: <span class="font-medium">{containerStatus}</span></p>
-				</div>
-			</div>
+			<Alert.Root class="border-yellow-200 bg-yellow-50 dark:border-yellow-900/50 dark:bg-yellow-900/10">
+				<Container class="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
+				<Alert.Title class="text-yellow-800 dark:text-yellow-200">Container Not Running</Alert.Title>
+				<Alert.Description class="text-yellow-700 dark:text-yellow-300">
+					The container must be running to access the shell. Current status: <strong>{containerStatus}</strong>
+				</Alert.Description>
+			</Alert.Root>
 		{:else}
 			<!-- Terminal Interface -->
-			<div class="h-full flex flex-col bg-gray-900 rounded-lg overflow-hidden">
-				<!-- Terminal Header -->
-				<div class="bg-gray-800 px-4 py-2 flex items-center justify-between">
-					<div class="flex items-center gap-2">
-						<div class="flex gap-1">
-							<div class="w-3 h-3 bg-red-500 rounded-full"></div>
-							<div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-							<div class="w-3 h-3 bg-green-500 rounded-full"></div>
+			<Card.Root class="h-full overflow-hidden bg-black dark:bg-gray-950">
+				<div class="h-full flex flex-col">
+					<!-- Terminal Header -->
+					<div class="bg-gray-800 dark:bg-gray-900 px-4 py-2 flex items-center justify-between border-b border-gray-700 dark:border-gray-800">
+						<div class="flex items-center gap-3">
+							<div class="flex gap-1">
+								<div class="w-3 h-3 bg-red-500 rounded-full"></div>
+								<div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+								<div class="w-3 h-3 bg-green-500 rounded-full"></div>
+							</div>
+							<span class="text-sm text-gray-300">
+								{containerName}@{containerId?.slice(0, 8)}
+							</span>
 						</div>
-						<span class="text-sm text-gray-300 ml-4">
-							{containerName}@{containerId?.slice(0, 8)}
-						</span>
-					</div>
-					<div class="text-xs text-gray-400">
-						Interactive Shell
-					</div>
-				</div>
-
-				<!-- Terminal Output -->
-				<div class="flex-1 p-4 font-mono text-sm text-green-400 overflow-auto bg-gray-900">
-					{#if output}
-						<pre class="whitespace-pre-wrap">{output}</pre>
-					{:else}
-						<div class="text-gray-500 mb-4">
-							Welcome to the container shell! Type commands and press Enter to execute.
-							<br>Use arrow keys to navigate command history.
+						<div class="text-xs text-gray-400 flex items-center gap-1">
+							<Terminal class="h-3 w-3" />
+							Interactive Shell
 						</div>
-					{/if}
-				</div>
+					</div>
 
-				<!-- Command Input -->
-				<div class="bg-gray-800 border-t border-gray-700 p-4">
-					<div class="flex items-center gap-2">
-						<span class="text-green-400 font-mono text-sm">$</span>
-						<input
-							type="text"
-							bind:value={command}
-							on:keydown={handleKeyDown}
-							disabled={isExecuting}
-							placeholder={isExecuting ? 'Executing...' : 'Enter command...'}
-							class="flex-1 bg-transparent text-green-400 font-mono text-sm border-none outline-none placeholder-gray-500 disabled:opacity-50"
-							autofocus
-						/>
-						<button
-							on:click={executeCommand}
-							disabled={!command.trim() || isExecuting}
-							class="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-						>
-							<Play class="w-3 h-3" />
-							{isExecuting ? 'Running...' : 'Run'}
-						</button>
+					<!-- Terminal Output -->
+					<div class="flex-1 p-4 font-mono text-sm text-green-400 overflow-auto bg-black dark:bg-gray-950 terminal-scroll">
+						{#if output}
+							<pre class="whitespace-pre-wrap leading-relaxed">{output}</pre>
+						{:else}
+							<div class="text-gray-500 mb-4 leading-relaxed">
+								<div class="mb-2">Welcome to the container shell!</div>
+								<div class="text-xs">
+									• Type commands and press Enter to execute<br>
+									• Use ↑/↓ arrow keys to navigate command history<br>
+									• Commands are executed in /bin/sh by default
+								</div>
+							</div>
+						{/if}
+					</div>
+
+					<!-- Command Input -->
+					<div class="bg-gray-800 dark:bg-gray-900 border-t border-gray-700 dark:border-gray-800 p-4">
+						<div class="flex items-center gap-3">
+							<span class="text-green-400 font-mono text-sm flex-shrink-0">$</span>
+							<Input
+								type="text"
+								bind:value={command}
+								on:keydown={handleKeyDown}
+								disabled={isExecuting}
+								placeholder={isExecuting ? 'Executing...' : 'Enter command...'}
+								class="flex-1 bg-transparent text-green-400 font-mono text-sm border-none outline-none ring-0 focus-visible:ring-0 placeholder:text-gray-500 disabled:opacity-50"
+							/>
+							<Button
+								size="sm"
+								on:click={executeCommand}
+								disabled={!command.trim() || isExecuting}
+								class="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+							>
+								<Play class="h-3 w-3" />
+								{isExecuting ? 'Running...' : 'Run'}
+							</Button>
+						</div>
 					</div>
 				</div>
-			</div>
+			</Card.Root>
 		{/if}
 	</div>
 </div>
 
 <style>
-	/* Custom scrollbar for terminal output */
-	.overflow-auto::-webkit-scrollbar {
+	/* Custom scrollbar styles for terminal */
+	.terminal-scroll::-webkit-scrollbar {
 		width: 8px;
 	}
 
-	.overflow-auto::-webkit-scrollbar-track {
-		background: #374151;
+	.terminal-scroll::-webkit-scrollbar-track {
+		background: #000000;
 	}
 
-	.overflow-auto::-webkit-scrollbar-thumb {
-		background: #6b7280;
+	.terminal-scroll::-webkit-scrollbar-thumb {
+		background: #4b5563;
 		border-radius: 4px;
 	}
 
-	.overflow-auto::-webkit-scrollbar-thumb:hover {
-		background: #9ca3af;
+	.terminal-scroll::-webkit-scrollbar-thumb:hover {
+		background: #6b7280;
+	}
+
+	:global(.dark) .terminal-scroll::-webkit-scrollbar-track {
+		background: #030712;
+	}
+
+	:global(.dark) .terminal-scroll::-webkit-scrollbar-thumb {
+		background: #374151;
+	}
+
+	:global(.dark) .terminal-scroll::-webkit-scrollbar-thumb:hover {
+		background: #4b5563;
 	}
 </style>

@@ -5,7 +5,19 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { connectionStatus } from '$lib/stores/docker.js';
 	import ContainerLogs from '$lib/components/docker/containers/ContainerLogs.svelte';
-	import { ArrowLeft, Container, AlertCircle } from 'lucide-svelte';
+	import { 
+		ArrowLeft, 
+		Container, 
+		AlertCircle, 
+		FileText, 
+		BarChart3, 
+		Terminal,
+		Activity,
+		Play,
+		Square,
+		Pause,
+		RotateCcw
+	} from 'lucide-svelte';
 
 	let containerId: string;
 	let containerName: string = '';
@@ -49,54 +61,120 @@
 		goto('/containers');
 	}
 
-	function getStatusColor(status: string): string {
+	function getStatusBadgeClass(status: string) {
 		switch (status) {
 			case 'running':
-				return 'text-green-600 bg-green-100';
+				return 'badge badge-default';
 			case 'exited':
-				return 'text-gray-600 bg-gray-100';
+				return 'badge badge-secondary';
 			case 'paused':
-				return 'text-yellow-600 bg-yellow-100';
+				return 'badge badge-outline';
 			case 'restarting':
-				return 'text-blue-600 bg-blue-100';
+				return 'badge badge-default';
 			default:
-				return 'text-gray-600 bg-gray-100';
+				return 'badge badge-secondary';
 		}
 	}
+
+	function getStatusIcon(status: string) {
+		switch (status) {
+			case 'running':
+				return Play;
+			case 'exited':
+				return Square;
+			case 'paused':
+				return Pause;
+			case 'restarting':
+				return RotateCcw;
+			default:
+				return Square;
+		}
+	}
+
+	// Navigation items for container tabs
+	$: containerTabs = [
+		{ 
+			label: 'Logs', 
+			icon: FileText, 
+			href: `/containers/${containerId}/logs`,
+			active: true
+		},
+		{ 
+			label: 'Stats', 
+			icon: BarChart3, 
+			href: `/containers/${containerId}/stats`,
+			active: false
+		},
+		{ 
+			label: 'Shell', 
+			icon: Terminal, 
+			href: `/containers/${containerId}/shell`,
+			active: false,
+			disabled: containerStatus !== 'running'
+		}
+	];
 </script>
 
 <svelte:head>
 	<title>Container Logs{containerName ? ` - ${containerName}` : ''} - DocSee</title>
 </svelte:head>
 
-<div class="p-6 h-full flex flex-col">
+<div class="space-y-6 h-full flex flex-col">
 	<!-- Header -->
-	<div class="flex items-center justify-between mb-6">
-		<div class="flex items-center gap-4">
+	<div class="space-y-4">
+		<!-- Breadcrumb -->
+		<div class="flex items-center gap-2 text-sm text-muted-foreground">
 			<button
+				class="btn btn-ghost btn-sm gap-2 px-2"
 				on:click={handleGoBack}
-				class="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
 			>
-				<ArrowLeft class="w-5 h-5" />
-				<span>Back to Containers</span>
+				<ArrowLeft class="h-4 w-4" />
+				Containers
 			</button>
+			<span>/</span>
+			<span class="text-foreground">Logs</span>
+		</div>
 
-			<div class="h-6 w-px bg-gray-300"></div>
-
-			<div class="flex items-center gap-3">
-				<Container class="w-6 h-6 text-gray-600" />
-				<div>
-					<h1 class="text-2xl font-bold text-gray-900">
-						{containerName || 'Container Logs'}
-					</h1>
-					<div class="flex items-center gap-2 text-sm text-gray-600">
-						<span class="font-mono">{containerId?.slice(0, 12)}</span>
-						{#if containerStatus}
-							<span class="px-2 py-1 rounded-full text-xs font-medium {getStatusColor(containerStatus)}">
+		<!-- Container Info -->
+		<div class="flex items-center justify-between">
+			<div class="flex items-center gap-4">
+				<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
+					<Container class="h-6 w-6 text-muted-foreground" />
+				</div>
+				<div class="space-y-1">
+					<div class="flex items-center gap-3">
+						<h1 class="text-2xl font-bold tracking-tight text-foreground">
+							{loading ? 'Loading...' : containerName || 'Container Logs'}
+						</h1>
+						{#if containerStatus && !loading}
+							<span class="{getStatusBadgeClass(containerStatus)} gap-1">
+								<svelte:component this={getStatusIcon(containerStatus)} class="h-3 w-3" />
 								{containerStatus}
 							</span>
 						{/if}
 					</div>
+					<div class="flex items-center gap-2 text-sm text-muted-foreground">
+						<Activity class="h-3 w-3" />
+						<span class="font-mono">{containerId?.slice(0, 12)}</span>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Container Navigation Tabs -->
+		<div class="card">
+			<div class="card-content p-4">
+				<div class="flex gap-2">
+					{#each containerTabs as tab}
+						<button
+							class="btn {tab.active ? 'btn-default' : 'btn-ghost'} btn-sm gap-2"
+							disabled={tab.disabled}
+							on:click={() => !tab.disabled && goto(tab.href)}
+						>
+							<svelte:component this={tab.icon} class="h-4 w-4" />
+							{tab.label}
+						</button>
+					{/each}
 				</div>
 			</div>
 		</div>
@@ -105,33 +183,37 @@
 	<!-- Content -->
 	<div class="flex-1 min-h-0">
 		{#if !$connectionStatus.connected}
-			<div class="h-full flex items-center justify-center">
-				<div class="text-center">
-					<AlertCircle class="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-					<h3 class="text-lg font-semibold text-gray-900 mb-2">Docker Connection Required</h3>
-					<p class="text-gray-600">Please connect to Docker to view container logs.</p>
+			<div class="alert border-yellow-200 bg-yellow-50 dark:border-yellow-900/50 dark:bg-yellow-900/10">
+				<AlertCircle class="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
+				<div class="alert-title text-yellow-800 dark:text-yellow-200">Docker Connection Required</div>
+				<div class="alert-description text-yellow-700 dark:text-yellow-300">
+					Please connect to Docker to view container logs.
 				</div>
 			</div>
 		{:else if loading}
-			<div class="h-full flex items-center justify-center">
-				<div class="inline-flex items-center text-gray-600">
-					<svg class="animate-spin -ml-1 mr-3 h-4 w-4" fill="none" viewBox="0 0 24 24">
-						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-						<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-					</svg>
-					Loading container details...
+			<div class="card h-full">
+				<div class="card-content p-6 h-full">
+					<div class="space-y-4">
+						<div class="flex items-center gap-2">
+							<div class="skeleton h-4 w-4 rounded"></div>
+							<div class="skeleton h-4 w-32"></div>
+						</div>
+						<div class="separator separator-horizontal"></div>
+						<div class="space-y-3">
+							{#each Array(10) as _}
+								<div class="skeleton h-4 w-full"></div>
+							{/each}
+						</div>
+					</div>
 				</div>
 			</div>
 		{:else if error}
-			<div class="h-full flex items-center justify-center">
-				<div class="text-center">
-					<AlertCircle class="w-12 h-12 text-red-500 mx-auto mb-4" />
-					<h3 class="text-lg font-semibold text-gray-900 mb-2">Failed to Load Container</h3>
-					<p class="text-gray-600 mb-4">{error}</p>
-					<button
-						on:click={loadContainerDetails}
-						class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-					>
+			<div class="alert alert-destructive">
+				<AlertCircle class="h-4 w-4" />
+				<div class="alert-title">Failed to Load Container</div>
+				<div class="alert-description mt-2">
+					<p class="mb-4">{error}</p>
+					<button class="btn btn-outline btn-sm" on:click={loadContainerDetails}>
 						Retry
 					</button>
 				</div>
