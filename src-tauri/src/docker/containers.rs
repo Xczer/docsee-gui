@@ -1,19 +1,18 @@
-// Container operations module
 use bollard::container::{
-    Config, CreateContainerOptions, ListContainersOptions, 
-    RemoveContainerOptions, StartContainerOptions, StopContainerOptions,
-    LogsOptions, StatsOptions, InspectContainerOptions, TopOptions,
-    RenameContainerOptions, RestartContainerOptions, KillContainerOptions
+    ListContainersOptions, InspectContainerOptions, StartContainerOptions,
+    StopContainerOptions, RestartContainerOptions, RemoveContainerOptions,
+    KillContainerOptions, StatsOptions,
 };
 use bollard::models::{ContainerSummary, ContainerInspectResponse};
-use bollard::Docker;
-use futures_util::stream::StreamExt;
-use serde::{Deserialize, Serialize};
+use bollard::container::Stats;
+use futures_util::stream::TryStreamExt;
+use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
-use crate::utils::error::{DockerError, DockerResult};
+use crate::docker::client::DOCKER_CLIENT;
+use crate::utils::{DockerError, Result, log_docker_operation};
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ContainerInfo {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContainerListItem {
     pub id: String,
     pub names: Vec<String>,
     pub image: String,
@@ -26,17 +25,55 @@ pub struct ContainerInfo {
     pub labels: HashMap<String, String>,
     pub size_rw: Option<i64>,
     pub size_root_fs: Option<i64>,
+    pub host_config: ContainerHostConfig,
+    pub network_settings: ContainerNetworkSettings,
+    pub mounts: Vec<ContainerMount>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContainerPort {
     pub ip: Option<String>,
     pub private_port: u16,
     pub public_port: Option<u16>,
-    pub port_type: String,
+    pub r#type: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContainerHostConfig {
+    pub network_mode: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContainerNetworkSettings {
+    pub networks: HashMap<String, ContainerNetwork>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContainerNetwork {
+    pub network_id: String,
+    pub endpoint_id: String,
+    pub gateway: String,
+    pub ip_address: String,
+    pub ip_prefix_len: i64,
+    pub ipv6_gateway: String,
+    pub global_ipv6_address: String,
+    pub global_ipv6_prefix_len: i64,
+    pub mac_address: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContainerMount {
+    pub r#type: String,
+    pub name: Option<String>,
+    pub source: String,
+    pub destination: String,
+    pub driver: Option<String>,
+    pub mode: String,
+    pub rw: bool,
+    pub propagation: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContainerDetails {
     pub id: String,
     pub created: String,
@@ -53,15 +90,15 @@ pub struct ContainerDetails {
     pub app_armor_profile: String,
     pub exec_ids: Option<Vec<String>>,
     pub host_config: serde_json::Value,
-    pub graph_driver: serde_json::Value,
+    pub graph_driver: GraphDriver,
     pub size_rw: Option<i64>,
     pub size_root_fs: Option<i64>,
-    pub mounts: Vec<serde_json::Value>,
+    pub mounts: Vec<ContainerMount>,
     pub config: serde_json::Value,
     pub network_settings: serde_json::Value,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContainerState {
     pub status: String,
     pub running: bool,
@@ -74,321 +111,346 @@ pub struct ContainerState {
     pub error: String,
     pub started_at: String,
     pub finished_at: String,
-    pub health: Option<serde_json::Value>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ContainerStats {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GraphDriver {
+    pub name: String,
+    pub data: HashMap<String, String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContainerStatsData {
+    pub id: String,
+    pub name: String,
     pub read: String,
     pub preread: String,
     pub pids_stats: Option<serde_json::Value>,
-    pub blkio_stats: serde_json::Value,
+    pub blkio_stats: Option<serde_json::Value>,
     pub num_procs: u32,
     pub storage_stats: Option<serde_json::Value>,
-    pub cpu_stats: serde_json::Value,
-    pub precpu_stats: serde_json::Value,
-    pub memory_stats: serde_json::Value,
-    pub name: String,
-    pub id: String,
-    pub networks: HashMap<String, serde_json::Value>,
+    pub cpu_stats: Option<serde_json::Value>,
+    pub precpu_stats: Option<serde_json::Value>,
+    pub memory_stats: Option<serde_json::Value>,
+    pub networks: Option<HashMap<String, serde_json::Value>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ContainerProcess {
-    pub titles: Vec<String>,
-    pub processes: Vec<Vec<String>>,
-}
+pub async fn list_containers(all: bool) -> Result<Vec<ContainerListItem>> {
+    let client = DOCKER_CLIENT.get_client().await?;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ContainerLog {
-    pub timestamp: String,
-    pub stream: String,
-    pub content: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CreateContainerRequest {
-    pub name: Option<String>,
-    pub image: String,
-    pub cmd: Option<Vec<String>>,
-    pub env: Option<Vec<String>>,
-    pub working_dir: Option<String>,
-    pub exposed_ports: Option<HashMap<String, serde_json::Value>>,
-    pub host_config: Option<serde_json::Value>,
-    pub networking_config: Option<serde_json::Value>,
-    pub labels: Option<HashMap<String, String>>,
-}
-
-pub async fn list_containers(
-    docker: &Docker, 
-    all: bool, 
-    size: bool
-) -> DockerResult<Vec<ContainerInfo>> {
     let options = Some(ListContainersOptions::<String> {
         all,
-        size,
         ..Default::default()
     });
 
-    let containers = docker.list_containers(options).await?;
-    
-    let result = containers
-        .into_iter()
-        .map(|container| map_container_summary(container))
-        .collect();
-    
-    Ok(result)
+    match client.list_containers(options).await {
+        Ok(containers) => {
+            let result: Vec<ContainerListItem> = containers
+                .into_iter()
+                .map(|container| convert_container_summary(container))
+                .collect();
+
+            log_docker_operation("list_containers", true, Some(&format!("Found {} containers", result.len())));
+            Ok(result)
+        }
+        Err(e) => {
+            log_docker_operation("list_containers", false, Some(&e.to_string()));
+            Err(DockerError::Connection(e))
+        }
+    }
 }
 
-pub async fn get_container(
-    docker: &Docker, 
-    id: &str
-) -> DockerResult<ContainerDetails> {
-    let options = Some(InspectContainerOptions { size: true });
-    
-    let container = docker.inspect_container(id, options).await?;
-    
-    Ok(map_container_inspect(container))
+pub async fn inspect_container(id: &str) -> Result<ContainerDetails> {
+    let client = DOCKER_CLIENT.get_client().await?;
+
+    let options = Some(InspectContainerOptions {
+        size: true,
+    });
+
+    match client.inspect_container(id, options).await {
+        Ok(container) => {
+            let result = convert_container_inspect(container);
+            log_docker_operation("inspect_container", true, Some(&format!("Inspected container {}", id)));
+            Ok(result)
+        }
+        Err(e) => {
+            log_docker_operation("inspect_container", false, Some(&e.to_string()));
+            if e.to_string().contains("404") {
+                Err(DockerError::ContainerNotFound { id: id.to_string() })
+            } else {
+                Err(DockerError::Connection(e))
+            }
+        }
+    }
 }
 
-pub async fn create_container(
-    docker: &Docker,
-    request: CreateContainerRequest,
-) -> DockerResult<String> {
-    let config = Config {
-        image: Some(request.image),
-        cmd: request.cmd,
-        env: request.env,
-        working_dir: request.working_dir,
-        exposed_ports: request.exposed_ports.map(|ports| {
-            ports.into_iter().map(|(k, _)| (k, HashMap::new())).collect()
-        }),
-        labels: request.labels,
-        ..Default::default()
+pub async fn start_container(id: &str) -> Result<()> {
+    let client = DOCKER_CLIENT.get_client().await?;
+
+    match client.start_container(id, None::<StartContainerOptions<String>>).await {
+        Ok(_) => {
+            log_docker_operation("start_container", true, Some(&format!("Started container {}", id)));
+            Ok(())
+        }
+        Err(e) => {
+            log_docker_operation("start_container", false, Some(&e.to_string()));
+            if e.to_string().contains("404") {
+                Err(DockerError::ContainerNotFound { id: id.to_string() })
+            } else {
+                Err(DockerError::Connection(e))
+            }
+        }
+    }
+}
+
+pub async fn stop_container(id: &str, timeout: Option<i64>) -> Result<()> {
+    let client = DOCKER_CLIENT.get_client().await?;
+
+    let options = StopContainerOptions {
+        t: timeout.unwrap_or(10),  // Remove the `as isize` conversion
     };
 
-    let options = CreateContainerOptions {
-        name: request.name.as_deref().unwrap_or(""),
-        platform: None,
+    match client.stop_container(id, Some(options)).await {
+        Ok(_) => {
+            log_docker_operation("stop_container", true, Some(&format!("Stopped container {}", id)));
+            Ok(())
+        }
+        Err(e) => {
+            log_docker_operation("stop_container", false, Some(&e.to_string()));
+            if e.to_string().contains("404") {
+                Err(DockerError::ContainerNotFound { id: id.to_string() })
+            } else {
+                Err(DockerError::Connection(e))
+            }
+        }
+    }
+}
+
+pub async fn restart_container(id: &str, timeout: Option<i64>) -> Result<()> {
+    let client = DOCKER_CLIENT.get_client().await?;
+
+    let options = RestartContainerOptions {
+        t: timeout.unwrap_or(10) as isize,  // Remove the `as isize` conversion here too
     };
 
-    let response = docker.create_container(Some(options), config).await?;
-    
-    Ok(response.id)
+    match client.restart_container(id, Some(options)).await {
+        Ok(_) => {
+            log_docker_operation("restart_container", true, Some(&format!("Restarted container {}", id)));
+            Ok(())
+        }
+        Err(e) => {
+            log_docker_operation("restart_container", false, Some(&e.to_string()));
+            if e.to_string().contains("404") {
+                Err(DockerError::ContainerNotFound { id: id.to_string() })
+            } else {
+                Err(DockerError::Connection(e))
+            }
+        }
+    }
 }
 
-pub async fn start_container(docker: &Docker, id: &str) -> DockerResult<()> {
-    docker.start_container(id, None::<StartContainerOptions<String>>).await?;
-    Ok(())
-}
+pub async fn remove_container(id: &str, force: bool, remove_volumes: bool) -> Result<()> {
+    let client = DOCKER_CLIENT.get_client().await?;
 
-pub async fn stop_container(docker: &Docker, id: &str, timeout: Option<i64>) -> DockerResult<()> {
-    let options = StopContainerOptions { t: timeout.unwrap_or(10) };
-    docker.stop_container(id, Some(options)).await?;
-    Ok(())
-}
-
-pub async fn restart_container(docker: &Docker, id: &str, timeout: Option<i64>) -> DockerResult<()> {
-    let options = RestartContainerOptions { t: timeout.unwrap_or(10) as isize };
-    docker.restart_container(id, Some(options)).await?;
-    Ok(())
-}
-
-pub async fn kill_container(docker: &Docker, id: &str, signal: Option<String>) -> DockerResult<()> {
-    let options = KillContainerOptions {
-        signal: signal.as_deref().unwrap_or("SIGKILL"),
-    };
-    docker.kill_container(id, Some(options)).await?;
-    Ok(())
-}
-
-pub async fn remove_container(
-    docker: &Docker, 
-    id: &str, 
-    force: bool, 
-    remove_volumes: bool
-) -> DockerResult<()> {
-    let options = RemoveContainerOptions {
+    let options = Some(RemoveContainerOptions {
         force,
         v: remove_volumes,
         ..Default::default()
-    };
-    
-    docker.remove_container(id, Some(options)).await?;
-    Ok(())
-}
+    });
 
-pub async fn rename_container(docker: &Docker, id: &str, new_name: &str) -> DockerResult<()> {
-    let options = RenameContainerOptions { name: new_name };
-    docker.rename_container(id, options).await?;
-    Ok(())
-}
-
-pub async fn get_container_stats(docker: &Docker, id: &str) -> DockerResult<ContainerStats> {
-    let options = StatsOptions {
-        stream: false,
-        one_shot: true,
-    };
-
-    let mut stream = docker.stats(id, Some(options));
-    
-    if let Some(result) = stream.next().await {
-        let stats = result?;
-        return Ok(map_container_stats(stats, id));
-    }
-    
-    Err(DockerError::operation_failed("Failed to get container stats"))
-}
-
-pub async fn get_container_processes(docker: &Docker, id: &str) -> DockerResult<ContainerProcess> {
-    let options = TopOptions { ps_args: "aux" };
-    let response = docker.top_processes(id, Some(options)).await?;
-    
-    Ok(ContainerProcess {
-        titles: response.titles.unwrap_or_default(),
-        processes: response.processes.unwrap_or_default(),
-    })
-}
-
-pub async fn get_container_logs(
-    docker: &Docker, 
-    id: &str, 
-    follow: bool,
-    tail: Option<String>,
-    since: Option<String>,
-    until: Option<String>,
-) -> DockerResult<Vec<ContainerLog>> {
-    let options = LogsOptions {
-        follow,
-        stdout: true,
-        stderr: true,
-        timestamps: true,
-        tail: tail.unwrap_or_else(|| "100".to_string()),
-        since: since.unwrap_or_default().parse().unwrap_or(0),
-        until: until.unwrap_or_default().parse().unwrap_or(0),
-        ..Default::default()
-    };
-
-    let mut stream = docker.logs(id, Some(options));
-    let mut logs = Vec::new();
-
-    while let Some(result) = stream.next().await {
-        let log_output = result?;
-        let log = ContainerLog {
-            timestamp: chrono::Utc::now().to_rfc3339(),
-            stream: "stdout".to_string(), // This could be enhanced to detect stderr
-            content: log_output.to_string(),
-        };
-        logs.push(log);
-        
-        if !follow && logs.len() >= 1000 { // Limit for non-streaming
-            break;
+    match client.remove_container(id, options).await {
+        Ok(_) => {
+            log_docker_operation("remove_container", true, Some(&format!("Removed container {}", id)));
+            Ok(())
+        }
+        Err(e) => {
+            log_docker_operation("remove_container", false, Some(&e.to_string()));
+            if e.to_string().contains("404") {
+                Err(DockerError::ContainerNotFound { id: id.to_string() })
+            } else {
+                Err(DockerError::Connection(e))
+            }
         }
     }
-
-    Ok(logs)
 }
 
-// Helper functions to map Docker API responses to our types
-fn map_container_summary(container: ContainerSummary) -> ContainerInfo {
-    ContainerInfo {
+pub async fn kill_container(id: &str, signal: Option<&str>) -> Result<()> {
+    let client = DOCKER_CLIENT.get_client().await?;
+
+    let options = Some(KillContainerOptions {
+        signal: signal.unwrap_or("SIGKILL"),
+    });
+
+    match client.kill_container(id, options).await {
+        Ok(_) => {
+            log_docker_operation("kill_container", true, Some(&format!("Killed container {}", id)));
+            Ok(())
+        }
+        Err(e) => {
+            log_docker_operation("kill_container", false, Some(&e.to_string()));
+            if e.to_string().contains("404") {
+                Err(DockerError::ContainerNotFound { id: id.to_string() })
+            } else {
+                Err(DockerError::Connection(e))
+            }
+        }
+    }
+}
+
+pub async fn get_container_stats(id: &str) -> Result<ContainerStatsData> {
+    let client = DOCKER_CLIENT.get_client().await?;
+
+    let options = Some(StatsOptions {
+        stream: false,
+        one_shot: true,
+    });
+
+    match client.stats(id, options).try_collect::<Vec<_>>().await {
+        Ok(mut stats) => {
+            if let Some(stat) = stats.pop() {
+                let result = convert_container_stats(stat);
+                log_docker_operation("get_container_stats", true, Some(&format!("Retrieved stats for container {}", id)));
+                Ok(result)
+            } else {
+                Err(DockerError::OperationFailed {
+                    message: "No stats data received".to_string(),
+                })
+            }
+        }
+        Err(e) => {
+            log_docker_operation("get_container_stats", false, Some(&e.to_string()));
+            if e.to_string().contains("404") {
+                Err(DockerError::ContainerNotFound { id: id.to_string() })
+            } else {
+                Err(DockerError::Connection(e))
+            }
+        }
+    }
+}
+
+// Helper functions to convert from bollard types to our types
+fn convert_container_summary(container: ContainerSummary) -> ContainerListItem {
+    ContainerListItem {
         id: container.id.unwrap_or_default(),
         names: container.names.unwrap_or_default(),
         image: container.image.unwrap_or_default(),
         image_id: container.image_id.unwrap_or_default(),
         command: container.command.unwrap_or_default(),
-        created: container.created.unwrap_or(0),
+        created: container.created.unwrap_or_default(),
         state: container.state.unwrap_or_default(),
         status: container.status.unwrap_or_default(),
-        ports: container.ports.unwrap_or_default()
-            .into_iter()
-            .map(|port| ContainerPort {
-                ip: port.ip,
-                private_port: port.private_port,
-                public_port: port.public_port,
-                port_type: format!("{:?}", port.typ.unwrap_or(bollard::models::PortTypeEnum::EMPTY)),
-            })
-            .collect(),
+        ports: container.ports.unwrap_or_default().into_iter().map(|p| ContainerPort {
+            ip: p.ip,
+            private_port: p.private_port,
+            public_port: p.public_port,
+            r#type: p.typ.as_ref().map(|t| t.to_string()).unwrap_or_default(),
+        }).collect(),
         labels: container.labels.unwrap_or_default(),
         size_rw: container.size_rw,
         size_root_fs: container.size_root_fs,
+        host_config: ContainerHostConfig {
+            network_mode: container.host_config
+                .and_then(|hc| hc.network_mode)
+                .unwrap_or_default(),
+        },
+        network_settings: ContainerNetworkSettings {
+            networks: container.network_settings
+                .and_then(|ns| ns.networks)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|(k, v)| (k, ContainerNetwork {
+                    network_id: v.network_id.unwrap_or_default(),
+                    endpoint_id: v.endpoint_id.unwrap_or_default(),
+                    gateway: v.gateway.unwrap_or_default(),
+                    ip_address: v.ip_address.unwrap_or_default(),
+                    ip_prefix_len: v.ip_prefix_len.unwrap_or_default(),
+                    ipv6_gateway: v.ipv6_gateway.unwrap_or_default(),
+                    global_ipv6_address: v.global_ipv6_address.unwrap_or_default(),
+                    global_ipv6_prefix_len: v.global_ipv6_prefix_len.unwrap_or_default(),
+                    mac_address: v.mac_address.unwrap_or_default(),
+                }))
+                .collect(),
+        },
+        mounts: container.mounts.unwrap_or_default().into_iter().map(|m| ContainerMount {
+            r#type: m.typ.as_ref().map(|t| t.to_string()).unwrap_or_default(),
+            name: m.name,
+            source: m.source.unwrap_or_default(),
+            destination: m.destination.unwrap_or_default(),
+            driver: m.driver,
+            mode: m.mode.unwrap_or_default(),
+            rw: m.rw.unwrap_or_default(),
+            propagation: m.propagation.unwrap_or_default(),
+        }).collect(),
     }
 }
 
-fn map_container_inspect(inspect: ContainerInspectResponse) -> ContainerDetails {
-    let state = inspect.state.map(|s| ContainerState {
-        status: format!("{:?}", s.status.unwrap_or(bollard::models::ContainerStateStatusEnum::EMPTY)),
-        running: s.running.unwrap_or(false),
-        paused: s.paused.unwrap_or(false),
-        restarting: s.restarting.unwrap_or(false),
-        oom_killed: s.oom_killed.unwrap_or(false),
-        dead: s.dead.unwrap_or(false),
-        pid: s.pid.unwrap_or(0),
-        exit_code: s.exit_code.unwrap_or(0),
-        error: s.error.unwrap_or_default(),
-        started_at: s.started_at.unwrap_or_default(),
-        finished_at: s.finished_at.unwrap_or_default(),
-        health: s.health.map(|h| serde_json::to_value(h).unwrap_or_default()),
-    }).unwrap_or_else(|| ContainerState {
-        status: "unknown".to_string(),
-        running: false,
-        paused: false,
-        restarting: false,
-        oom_killed: false,
-        dead: false,
-        pid: 0,
-        exit_code: 0,
-        error: String::new(),
-        started_at: String::new(),
-        finished_at: String::new(),
-        health: None,
-    });
-
+fn convert_container_inspect(container: ContainerInspectResponse) -> ContainerDetails {
     ContainerDetails {
-        id: inspect.id.unwrap_or_default(),
-        created: inspect.created.unwrap_or_default(),
-        path: inspect.path.unwrap_or_default(),
-        args: inspect.args.unwrap_or_default(),
-        state,
-        image: inspect.image.unwrap_or_default(),
-        name: inspect.name.unwrap_or_default(),
-        restart_count: inspect.restart_count.unwrap_or(0),
-        driver: inspect.driver.unwrap_or_default(),
-        platform: inspect.platform.unwrap_or_default(),
-        mount_label: inspect.mount_label.unwrap_or_default(),
-        process_label: inspect.process_label.unwrap_or_default(),
-        app_armor_profile: inspect.app_armor_profile.unwrap_or_default(),
-        exec_ids: inspect.exec_ids,
-        host_config: serde_json::to_value(inspect.host_config).unwrap_or_default(),
-        graph_driver: serde_json::to_value(inspect.graph_driver).unwrap_or_default(),
-        size_rw: inspect.size_rw,
-        size_root_fs: inspect.size_root_fs,
-        mounts: inspect.mounts.map(|mounts| 
-            mounts.into_iter()
-                .map(|mount| serde_json::to_value(mount).unwrap_or_default())
-                .collect()
-        ).unwrap_or_default(),
-        config: serde_json::to_value(inspect.config).unwrap_or_default(),
-        network_settings: serde_json::to_value(inspect.network_settings).unwrap_or_default(),
+        id: container.id.unwrap_or_default(),
+        created: container.created.unwrap_or_default(),
+        path: container.path.unwrap_or_default(),
+        args: container.args.unwrap_or_default(),
+        state: ContainerState {
+            status: container.state.as_ref().and_then(|s| s.status.as_ref()).map(|s| s.to_string()).unwrap_or_default(),
+            running: container.state.as_ref().and_then(|s| s.running).unwrap_or_default(),
+            paused: container.state.as_ref().and_then(|s| s.paused).unwrap_or_default(),
+            restarting: container.state.as_ref().and_then(|s| s.restarting).unwrap_or_default(),
+            oom_killed: container.state.as_ref().and_then(|s| s.oom_killed).unwrap_or_default(),
+            dead: container.state.as_ref().and_then(|s| s.dead).unwrap_or_default(),
+            pid: container.state.as_ref().and_then(|s| s.pid).unwrap_or_default(),
+            exit_code: container.state.as_ref().and_then(|s| s.exit_code).unwrap_or_default(),
+            error: container.state.as_ref().and_then(|s| s.error.clone()).unwrap_or_default(),
+            started_at: container.state.as_ref().and_then(|s| s.started_at.clone()).unwrap_or_default(),
+            finished_at: container.state.as_ref().and_then(|s| s.finished_at.clone()).unwrap_or_default(),
+        },
+        image: container.image.unwrap_or_default(),
+        name: container.name.unwrap_or_default(),
+        restart_count: container.restart_count.unwrap_or_default(),
+        driver: container.driver.unwrap_or_default(),
+        platform: container.platform.unwrap_or_default(),
+        mount_label: container.mount_label.unwrap_or_default(),
+        process_label: container.process_label.unwrap_or_default(),
+        app_armor_profile: container.app_armor_profile.unwrap_or_default(),
+        exec_ids: container.exec_ids,
+        host_config: serde_json::to_value(&container.host_config).unwrap_or_default(),
+        graph_driver: GraphDriver {
+            name: container.graph_driver.as_ref().and_then(|gd| Some(gd.name.clone())).unwrap_or_default(),
+            data: container.graph_driver.as_ref().map(|gd| gd.data.clone()).unwrap_or_default(),
+        },
+        size_rw: container.size_rw,
+        size_root_fs: container.size_root_fs,
+        mounts: container.mounts.unwrap_or_default().into_iter().map(|m| ContainerMount {
+            r#type: m.typ.as_ref().map(|t| t.to_string()).unwrap_or_default(),
+            name: m.name,
+            source: m.source.unwrap_or_default(),
+            destination: m.destination.unwrap_or_default(),
+            driver: m.driver,
+            mode: m.mode.unwrap_or_default(),
+            rw: m.rw.unwrap_or_default(),
+            propagation: m.propagation.unwrap_or_default(),
+        }).collect(),
+        config: serde_json::to_value(&container.config).unwrap_or_default(),
+        network_settings: serde_json::to_value(&container.network_settings).unwrap_or_default(),
     }
 }
 
-fn map_container_stats(stats: bollard::container::Stats, id: &str) -> ContainerStats {
-    ContainerStats {
+fn convert_container_stats(stats: Stats) -> ContainerStatsData {
+    ContainerStatsData {
+        id: stats.id,
+        name: stats.name,
         read: stats.read,
         preread: stats.preread,
-        pids_stats: stats.pids_stats.map(|p| serde_json::to_value(&p).unwrap_or_default()),
-        blkio_stats: serde_json::to_value(stats.blkio_stats).unwrap_or_default(),
+        pids_stats: Some(serde_json::to_value(&stats.pids_stats).unwrap_or_default()),
+        blkio_stats: Some(serde_json::to_value(&stats.blkio_stats).unwrap_or_default()),
         num_procs: stats.num_procs,
-        storage_stats: stats.storage_stats.map(|s| serde_json::to_value(&s).unwrap_or_default()),
-        cpu_stats: serde_json::to_value(stats.cpu_stats).unwrap_or_default(),
-        precpu_stats: serde_json::to_value(stats.precpu_stats).unwrap_or_default(),
-        memory_stats: serde_json::to_value(stats.memory_stats).unwrap_or_default(),
-        name: stats.name,
-        id: id.to_string(),
-        networks: stats.networks.unwrap_or_default()
-            .into_iter()
-            .map(|(k, v)| (k, serde_json::to_value(v).unwrap_or_default()))
-            .collect(),
+        storage_stats: Some(serde_json::to_value(&stats.storage_stats).unwrap_or_default()),
+        cpu_stats: Some(serde_json::to_value(&stats.cpu_stats).unwrap_or_default()),
+        precpu_stats: Some(serde_json::to_value(&stats.precpu_stats).unwrap_or_default()),
+        memory_stats: Some(serde_json::to_value(&stats.memory_stats).unwrap_or_default()),
+        networks: stats.networks.map(|networks| {
+            networks.into_iter()
+                .map(|(k, v)| (k, serde_json::to_value(v).unwrap_or_default()))
+                .collect()
+        }),
     }
 }

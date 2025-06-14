@@ -1,6 +1,6 @@
-// Image Types for DocSee
+// Image types
 
-export interface Image {
+export interface ImageSummary {
   id: string;
   parent_id: string;
   repo_tags: string[];
@@ -28,7 +28,7 @@ export interface ImageInspect {
     attach_stdin: boolean;
     attach_stdout: boolean;
     attach_stderr: boolean;
-    exposed_ports: Record<string, any>;
+    exposed_ports?: Record<string, {}>;
     tty: boolean;
     open_stdin: boolean;
     stdin_once: boolean;
@@ -43,12 +43,12 @@ export interface ImageInspect {
     };
     args_escaped: boolean;
     image: string;
-    volumes: Record<string, any>;
+    volumes?: Record<string, {}>;
     working_dir: string;
-    entrypoint: string[];
+    entrypoint: string[] | null;
     network_disabled: boolean;
     mac_address: string;
-    on_build: string[];
+    on_build: string[] | null;
     labels: Record<string, string>;
     stop_signal: string;
     stop_timeout: number;
@@ -63,7 +63,7 @@ export interface ImageInspect {
     attach_stdin: boolean;
     attach_stdout: boolean;
     attach_stderr: boolean;
-    exposed_ports: Record<string, any>;
+    exposed_ports?: Record<string, {}>;
     tty: boolean;
     open_stdin: boolean;
     stdin_once: boolean;
@@ -78,12 +78,12 @@ export interface ImageInspect {
     };
     args_escaped: boolean;
     image: string;
-    volumes: Record<string, any>;
+    volumes?: Record<string, {}>;
     working_dir: string;
-    entrypoint: string[];
+    entrypoint: string[] | null;
     network_disabled: boolean;
     mac_address: string;
-    on_build: string[];
+    on_build: string[] | null;
     labels: Record<string, string>;
     stop_signal: string;
     stop_timeout: number;
@@ -91,12 +91,11 @@ export interface ImageInspect {
   };
   architecture: string;
   os: string;
-  os_version: string;
   size: number;
   virtual_size: number;
   graph_driver: {
-    data: Record<string, string>;
     name: string;
+    data: Record<string, string>;
   };
   root_fs: {
     type: string;
@@ -107,13 +106,50 @@ export interface ImageInspect {
   };
 }
 
-export interface ImageHistory {
+export interface ImageHistoryEntry {
   id: string;
   created: number;
   created_by: string;
   tags: string[];
   size: number;
   comment: string;
+}
+
+export interface ImageBuildOptions {
+  dockerfile?: string;
+  t?: string[]; // tags
+  extrahosts?: string;
+  remote?: string;
+  q?: boolean; // quiet
+  nocache?: boolean;
+  cachefrom?: string[];
+  pull?: boolean;
+  rm?: boolean;
+  forcerm?: boolean;
+  memory?: number;
+  memswap?: number;
+  cpushares?: number;
+  cpusetcpus?: string;
+  cpuperiod?: number;
+  cpuquota?: number;
+  buildargs?: Record<string, string>;
+  shmsize?: number;
+  squash?: boolean;
+  labels?: Record<string, string>;
+  networkmode?: string;
+  platform?: string;
+  target?: string;
+  outputs?: string;
+}
+
+export interface ImagePullOptions {
+  tag?: string;
+  platform?: string;
+  all?: boolean;
+}
+
+export interface ImagePushOptions {
+  tag?: string;
 }
 
 export interface ImageSearchResult {
@@ -124,116 +160,13 @@ export interface ImageSearchResult {
   is_automated: boolean;
 }
 
-export interface BuildInfo {
+export interface ImageAction {
   id: string;
-  stream?: string;
-  error?: string;
-  error_detail?: {
-    message: string;
-  };
-  status?: string;
-  progress?: string;
-  progress_detail?: {
-    current: number;
-    total: number;
-  };
-  aux?: {
-    id: string;
-  };
-}
-
-export interface BuildContext {
-  dockerfile?: string;
-  context: string;
+  action: 'remove' | 'tag' | 'push' | 'save' | 'load';
+  force?: boolean;
+  no_prune?: boolean;
   tag?: string;
-  labels?: Record<string, string>;
-  build_args?: Record<string, string>;
-  target?: string;
-  network_mode?: string;
-  cache_from?: string[];
-  pull?: boolean;
-  rm?: boolean;
-  force_rm?: boolean;
-  memory?: number;
-  memory_swap?: number;
-  cpu_shares?: number;
-  cpu_set_cpus?: string;
-  cpu_period?: number;
-  cpu_quota?: number;
-  squash?: boolean;
-  platform?: string;
-}
-
-export interface PullProgress {
-  status: string;
-  progress?: string;
-  progress_detail?: {
-    current: number;
-    total: number;
-  };
-  id?: string;
-}
-
-export interface ImageLayer {
-  id: string;
-  size: number;
-  created: number;
-  created_by: string;
-  comment: string;
-  author: string;
-}
-
-export interface RegistryAuth {
-  username: string;
-  password: string;
-  email?: string;
-  server_address?: string;
-}
-
-export interface Registry {
-  name: string;
-  url: string;
-  username?: string;
-  password?: string;
-  is_default: boolean;
-  is_secure: boolean;
-  auth_token?: string;
-}
-
-export interface ImageTag {
-  name: string;
-  full_size: number;
-  images: Array<{
-    architecture: string;
-    features: string;
-    variant: string;
-    digest: string;
-    os: string;
-    os_features: string;
-    os_version: string;
-    size: number;
-  }>;
-  last_updated: string;
-  last_updater_username: string;
-  tag_status: string;
-  tag_last_pulled: string;
-  tag_last_pushed: string;
-}
-
-export interface ImageManifest {
-  schema_version: number;
-  media_type: string;
-  config: {
-    media_type: string;
-    size: number;
-    digest: string;
-  };
-  layers: Array<{
-    media_type: string;
-    size: number;
-    digest: string;
-    urls?: string[];
-  }>;
+  repo?: string;
 }
 
 export interface ImagePruneResult {
@@ -244,65 +177,31 @@ export interface ImagePruneResult {
   space_reclaimed: number;
 }
 
-export interface CreateImageOptions {
-  from_image: string;
-  from_src?: string;
-  repo?: string;
-  tag?: string;
-  message?: string;
-  changes?: string[];
-  platform?: string;
+export interface RegistryAuth {
+  username?: string;
+  password?: string;
+  email?: string;
+  serveraddress?: string;
+  identitytoken?: string;
+  registrytoken?: string;
 }
 
-export interface TagImageOptions {
-  repo: string;
-  tag?: string;
-  force?: boolean;
-}
-
-export interface ExportImageOptions {
-  names: string[];
-}
-
-export interface ImportImageOptions {
-  source: string;
-  repo?: string;
-  tag?: string;
-  message?: string;
-  changes?: string[];
-  platform?: string;
-}
-
-export interface ImageUsage {
-  image_id: string;
-  containers: number;
-  size: number;
-  created: number;
-  last_used: number;
-}
-
-export interface ImageVulnerability {
-  id: string;
-  package_name: string;
-  package_version: string;
-  vulnerability_id: string;
-  severity: 'unknown' | 'negligible' | 'low' | 'medium' | 'high' | 'critical';
-  description: string;
-  link: string;
-  fixed_by?: string;
-}
-
-export interface ImageScanResult {
-  image_id: string;
-  scan_date: string;
-  vulnerabilities: ImageVulnerability[];
-  total_vulnerabilities: number;
-  vulnerabilities_by_severity: {
-    critical: number;
-    high: number;
-    medium: number;
-    low: number;
-    negligible: number;
-    unknown: number;
+export interface BuildProgress {
+  id?: string;
+  status?: string;
+  progress?: string;
+  progress_detail?: {
+    current?: number;
+    total?: number;
+  };
+  stream?: string;
+  error?: string;
+  error_detail?: {
+    message: string;
+  };
+  aux?: {
+    id: string;
   };
 }
+
+export type ImageStatus = 'available' | 'pulling' | 'building' | 'pushing' | 'error';
