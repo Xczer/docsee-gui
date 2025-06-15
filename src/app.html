@@ -5,13 +5,13 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%sveltekit.assets%/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>DocSee - Docker Management</title>
+    <title>DocSee - Professional Docker Management</title>
 
     <!-- Theme initialization script - must run before body renders -->
     <script>
       // Prevent flash of wrong theme
       (function() {
-        const theme = localStorage.getItem('theme');
+        const theme = localStorage.getItem('mode-watcher-mode');
         const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
         if (theme === 'dark' || (!theme && systemPrefersDark)) {
