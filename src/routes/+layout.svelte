@@ -1,24 +1,26 @@
 <script lang="ts">
+	import '../app.css';
 	import { onMount, onDestroy } from 'svelte';
-	import { 
-		connectionStatus, 
-		initializeDockerConnection, 
-		startAutoRefresh, 
+	import {
+		connectionStatus,
+		initializeDockerConnection,
+		startAutoRefresh,
 		stopAutoRefresh,
 		isConnecting,
-		dockerError 
-	} from '$lib/stores/docker.js';
-	import { initializeTheme, theme } from '$lib/stores/theme.js';
+		dockerError,
+		setDockerError
+	} from '$lib/stores/docker.svelte';
+	import { theme } from '$lib/stores/theme.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import ThemeToggle from '$lib/components/common/ThemeToggle.svelte';
-	import { 
-		Container, 
-		Image, 
-		Network, 
-		HardDrive, 
-		BarChart3, 
-		Settings, 
+	import { ThemeToggle } from '$lib/components/ui';
+	import {
+		Container,
+		Image,
+		Network,
+		HardDrive,
+		BarChart3,
+		Settings,
 		Home,
 		X,
 		AlertCircle,
@@ -27,30 +29,53 @@
 		Loader2
 	} from 'lucide-svelte';
 
-	let mounted = false;
-	let themeCleanup: (() => void) | undefined;
+	// Properly destructure children from $props
+	let { children } = $props();
 
-	onMount(async () => {
-		mounted = true;
-		// Initialize theme system
-		themeCleanup = initializeTheme();
-		// Initialize Docker connection when the app starts
-		await initializeDockerConnection();
-		// Start auto-refresh of connection status
-		startAutoRefresh(5000);
-	});
+	let mounted = $state(false);
 
-	onDestroy(() => {
-		stopAutoRefresh();
-		// Cleanup theme listeners
-		if (themeCleanup) {
-			themeCleanup();
+	// Get reactive values
+	let currentConnectionStatus = $derived(connectionStatus());
+	let currentIsConnecting = $derived(isConnecting());
+	let currentDockerError = $derived(dockerError());
+	let currentTheme = $derived(theme());
+
+	// Reactive statements for navigation highlighting using $derived
+	let currentPath = $derived($page.url.pathname);
+
+	// Debug reactive statements using $effect - moved after reactive values are defined
+	$effect(() => {
+		if (mounted) {
+			console.log('Connection Status:', currentConnectionStatus);
+			console.log('Is Connecting:', currentIsConnecting);
+			console.log('Docker Error:', currentDockerError);
+			console.log('Current Theme:', currentTheme);
 		}
 	});
 
-	// Reactive statements for navigation highlighting
-	$: currentPath = $page.url.pathname;
-	
+	onMount(async () => {
+		mounted = true;
+		console.log('Layout mounted, initializing Docker connection...');
+
+		try {
+			// Initialize Docker connection when the app starts
+			await initializeDockerConnection();
+			console.log('Docker connection initialized');
+
+			// Start auto-refresh of connection status
+			startAutoRefresh(5000);
+			console.log('Auto-refresh started');
+		} catch (error) {
+			console.error('Error during initialization:', error);
+		}
+	});
+
+	onDestroy(() => {
+		console.log('Layout unmounting, stopping auto-refresh...');
+		stopAutoRefresh();
+		mounted = false;
+	});
+
 	function isActiveRoute(route: string): boolean {
 		if (route === '/' && currentPath === '/') return true;
 		if (route !== '/' && currentPath.startsWith(route)) return true;
@@ -66,6 +91,11 @@
 		{ path: '/volumes', label: 'Volumes', icon: HardDrive },
 		{ path: '/system', label: 'System', icon: BarChart3 },
 	];
+
+	// Navigation helper
+	function navigateTo(path: string) {
+		goto(path);
+	}
 </script>
 
 <svelte:head>
@@ -93,46 +123,47 @@
 					<!-- Desktop Navigation -->
 					<nav class="hidden lg:flex items-center gap-1">
 						{#each navigationItems as item}
+							{@const IconComponent = item.icon}
 							<button
 								class="btn btn-ghost btn-sm gap-2 px-3 {isActiveRoute(item.path) ? 'bg-secondary text-secondary-foreground' : ''}"
-								on:click={() => goto(item.path)}
+								onclick={() => navigateTo(item.path)}
 							>
-								<svelte:component this={item.icon} class="h-4 w-4" />
+								<IconComponent class="h-4 w-4" />
 								{item.label}
 							</button>
 						{/each}
 					</nav>
 				</div>
-				
+
 				<!-- Status and Actions -->
 				<div class="flex items-center gap-4">
 					<!-- Docker Connection Status -->
 					<div class="hidden sm:flex items-center gap-2">
-						{#if $isConnecting}
+						{#if currentIsConnecting}
 							<span class="badge badge-secondary gap-2">
 								<Loader2 class="h-3 w-3 animate-spin" />
 								Connecting...
 							</span>
-						{:else if $connectionStatus.connected}
+						{:else if currentConnectionStatus.connected}
 							<span class="badge gap-2 bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">
 								<Wifi class="h-3 w-3" />
-								Connected {$connectionStatus.version ? `(${$connectionStatus.version})` : ''}
+								Connected {currentConnectionStatus.version ? `(${currentConnectionStatus.version})` : ''}
 							</span>
 						{:else}
 							<span class="badge badge-destructive gap-2">
 								<WifiOff class="h-3 w-3" />
-								{$connectionStatus.error ? 'Error' : 'Disconnected'}
+								{currentConnectionStatus.error ? 'Error' : 'Disconnected'}
 							</span>
 						{/if}
 					</div>
-					
+
 					<!-- Theme Toggle -->
-					<ThemeToggle variant="dropdown" size="md" />
-					
+					<ThemeToggle />
+
 					<!-- Settings -->
 					<button
 						class="btn btn-ghost btn-icon"
-						on:click={() => goto('/settings')}
+						onclick={() => navigateTo('/settings')}
 						title="Settings"
 					>
 						<Settings class="h-4 w-4" />
@@ -148,32 +179,33 @@
 		<div class="container mx-auto px-6">
 			<div class="flex gap-1 py-3 overflow-x-auto">
 				{#each navigationItems as item}
+					{@const IconComponent = item.icon}
 					<button
 						class="btn btn-ghost btn-sm gap-2 px-3 flex-shrink-0 {isActiveRoute(item.path) ? 'bg-secondary text-secondary-foreground' : ''}"
-						on:click={() => goto(item.path)}
+						onclick={() => navigateTo(item.path)}
 					>
-						<svelte:component this={item.icon} class="h-4 w-4" />
+						<IconComponent class="h-4 w-4" />
 						{item.label}
 					</button>
 				{/each}
 			</div>
 		</div>
 	</div>
-	
+
 	<!-- Error Banner -->
-	{#if $dockerError}
+	{#if currentDockerError}
 		<div class="alert alert-destructive rounded-none border-x-0 border-t-0">
 			<div class="container mx-auto px-6 lg:px-8">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-3">
 						<AlertCircle class="h-4 w-4" />
 						<div class="alert-description text-sm font-medium">
-							Docker Error: {$dockerError}
+							Docker Error: {currentDockerError}
 						</div>
 					</div>
 					<button
 						class="btn btn-ghost btn-icon h-6 w-6 hover:bg-destructive/20"
-						on:click={() => dockerError.set(null)}
+						onclick={() => setDockerError(null)}
 					>
 						<X class="h-4 w-4" />
 						<span class="sr-only">Close error message</span>
@@ -182,19 +214,74 @@
 			</div>
 		</div>
 	{/if}
-	
+
+	<!-- Debug Info (only in development) -->
+	<div class="bg-muted p-2 text-xs text-muted-foreground">
+		<div class="container mx-auto px-6">
+			Debug: Theme={currentTheme} | Connected={currentConnectionStatus.connected} | Connecting={currentIsConnecting} | Error={currentDockerError || 'None'}
+		</div>
+	</div>
+
 	<!-- Main Content -->
 	<main class="container mx-auto px-6 lg:px-8 py-8">
 		<div class="max-w-screen-2xl mx-auto">
-			<slot />
+			{@render children?.()}
 		</div>
 	</main>
 </div>
 
 <style>
-	/* Ensure proper font rendering */
+	/* Global styles */
+	:global(html) {
+		scroll-behavior: smooth;
+	}
+
 	:global(body) {
+		overscroll-behavior: none;
 		font-feature-settings: "rlig" 1, "calt" 1;
+	}
+
+	/* Custom scrollbar for webkit browsers */
+	:global(*) {
+		scrollbar-width: thin;
+		scrollbar-color: var(--color-border) transparent;
+	}
+
+	:global(*::-webkit-scrollbar) {
+		width: 6px;
+		height: 6px;
+	}
+
+	:global(*::-webkit-scrollbar-track) {
+		background: transparent;
+	}
+
+	:global(*::-webkit-scrollbar-thumb) {
+		background-color: var(--color-border);
+		border-radius: 3px;
+	}
+
+	:global(*::-webkit-scrollbar-thumb:hover) {
+		background-color: var(--color-muted-foreground);
+	}
+
+	/* Focus styles */
+	:global(*:focus-visible) {
+		outline: 2px solid var(--color-ring);
+		outline-offset: 2px;
+	}
+
+	/* Selection styles */
+	:global(::selection) {
+		background-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+	}
+
+	/* Remove default focus styles that conflict */
+	:global(button:focus),
+	:global(input:focus),
+	:global(select:focus),
+	:global(textarea:focus) {
+		outline: none;
 	}
 
 	/* Custom scrollbar for mobile navigation */
@@ -207,11 +294,11 @@
 	}
 
 	.overflow-x-auto::-webkit-scrollbar-thumb {
-		background: rgb(var(--muted-foreground) / 0.3);
+		background: color-mix(in srgb, var(--color-muted-foreground) 30%, transparent);
 		border-radius: 2px;
 	}
 
 	.overflow-x-auto::-webkit-scrollbar-thumb:hover {
-		background: rgb(var(--muted-foreground) / 0.5);
+		background: color-mix(in srgb, var(--color-muted-foreground) 50%, transparent);
 	}
 </style>

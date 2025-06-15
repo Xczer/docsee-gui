@@ -68,7 +68,7 @@ A modern, lightweight Docker management application built with Tauri and SvelteK
 
 ## 🛠️ Technical Stack
 
-- **Frontend**: SvelteKit + TypeScript + TailwindCSS + shadcn-svelte
+- **Frontend**: SvelteKit + TypeScript + TailwindCSS + bits UI
 - **Backend**: Rust + Tauri v2 + Bollard (Docker API)
 - **Performance**: Native desktop app with web technologies
 - **Cross-platform**: Windows, macOS, Linux support
@@ -216,8 +216,8 @@ bun tauri build
 
 ## 📝 Project Status
 
-**Current Version**: 1.0.0 ✅  
-**Status**: Production Ready  
+**Current Version**: 1.0.0 ✅
+**Status**: Production Ready
 **Phase**: Version 1.0 Complete - All core features implemented!
 
 ### 🎯 **Success Metrics - ACHIEVED!**

@@ -1,12 +1,12 @@
 import { writable, type Writable } from 'svelte/store';
-import type { ImageSummary, ImageInspect } from '../types/image.js';
+import type { ImageSummary, ImageInspect } from '../types/image';
 import { 
   getImages, 
   getImageDetails, 
   removeImage,
   pullImage,
   handleTauriError 
-} from '../services/tauri-commands.js';
+} from '../services/tauri-commands';
 
 // Images store
 export const images: Writable<ImageSummary[]> = writable([]);

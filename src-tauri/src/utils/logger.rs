@@ -3,11 +3,11 @@ use tracing_subscriber;
 
 pub fn init_logger() {
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
+        .with_max_level(tracing::Level::DEBUG)  // Changed from INFO to DEBUG for better debugging
         .with_target(false)
         .init();
     
-    info!("Logger initialized");
+    info!("Logger initialized with DEBUG level");
 }
 
 pub fn log_docker_connection(success: bool, error: Option<&str>) {

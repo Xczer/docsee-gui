@@ -3,17 +3,17 @@ import type {
   DockerConnectionStatus, 
   DockerSystemInfo, 
   DockerStats 
-} from '../types/docker.js';
+} from '../types/docker';
 import type { 
   Container, 
   ContainerInspect, 
   ContainerStats,
   ContainerLogLine 
-} from '../types/container.js';
+} from '../types/container';
 import type { 
   ImageSummary, 
   ImageInspect 
-} from '../types/image.js';
+} from '../types/image';
 
 // System API
 export async function connectDocker(): Promise<boolean> {
