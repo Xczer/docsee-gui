@@ -9,203 +9,204 @@ import {
   testDockerConnection
 } from '../services/tauri-commands';
 
-// Private state using $state
-const _connectionStatus = $state<DockerConnectionStatus>({
-  connected: false,
-  error: undefined,
-  version: undefined,
-  api_version: undefined
-});
+// Use a class-based approach to encapsulate the state
+class DockerStore {
+  private _connectionStatus = $state<DockerConnectionStatus>({
+    connected: false,
+    error: undefined,
+    version: undefined,
+    api_version: undefined
+  });
 
-const _systemInfo = $state<{ value: DockerSystemInfo | null }>({ value: null });
-const _systemStats = $state<{ value: DockerStats | null }>({ value: null });
-const _isConnecting = $state<{ value: boolean }>({ value: false });
-const _isLoadingSystemInfo = $state<{ value: boolean }>({ value: false });
-const _isLoadingStats = $state<{ value: boolean }>({ value: false });
-const _dockerError = $state<{ value: string | null }>({ value: null });
+  private _systemInfo = $state<DockerSystemInfo | null>(null);
+  private _systemStats = $state<DockerStats | null>(null);
+  private _isConnecting = $state<boolean>(false);
+  private _isLoadingSystemInfo = $state<boolean>(false);
+  private _isLoadingStats = $state<boolean>(false);
+  private _dockerError = $state<string | null>(null);
+  private refreshInterval: ReturnType<typeof setInterval> | null = null;
 
-// Export getters that return the state values
-export function connectionStatus() {
-  return _connectionStatus;
-}
+  // Getters
+  get connectionStatus() {
+    return this._connectionStatus;
+  }
 
-export function systemInfo() {
-  return _systemInfo.value;
-}
+  get systemInfo() {
+    return this._systemInfo;
+  }
 
-export function systemStats() {
-  return _systemStats.value;
-}
+  get systemStats() {
+    return this._systemStats;
+  }
 
-export function isConnecting() {
-  return _isConnecting.value;
-}
+  get isConnecting() {
+    return this._isConnecting;
+  }
 
-export function isLoadingSystemInfo() {
-  return _isLoadingSystemInfo.value;
-}
+  get isLoadingSystemInfo() {
+    return this._isLoadingSystemInfo;
+  }
 
-export function isLoadingStats() {
-  return _isLoadingStats.value;
-}
+  get isLoadingStats() {
+    return this._isLoadingStats;
+  }
 
-export function dockerError() {
-  return _dockerError.value;
-}
+  get dockerError() {
+    return this._dockerError;
+  }
 
-// Connection functions
-export async function initializeDockerConnection() {
-  try {
-    _isConnecting.value = true;
-    _dockerError.value = null;
+  // Connection functions
+  async initializeDockerConnection() {
+    try {
+      this._isConnecting = true;
+      this._dockerError = null;
 
-    const status = await getDockerConnectionStatus();
-    _connectionStatus.connected = status.connected;
-    _connectionStatus.error = status.error;
-    _connectionStatus.version = status.version;
-    _connectionStatus.api_version = status.api_version;
+      const status = await getDockerConnectionStatus();
+      this._connectionStatus.connected = status.connected;
+      this._connectionStatus.error = status.error;
+      this._connectionStatus.version = status.version;
+      this._connectionStatus.api_version = status.api_version;
 
-    if (!status.connected) {
-      console.log('Docker not connected, attempting to connect...');
+      if (!status.connected) {
+        console.log('Docker not connected, attempting to connect...');
+        const connected = await connectDocker();
+        if (connected) {
+          const newStatus = await getDockerConnectionStatus();
+          this._connectionStatus.connected = newStatus.connected;
+          this._connectionStatus.error = newStatus.error;
+          this._connectionStatus.version = newStatus.version;
+          this._connectionStatus.api_version = newStatus.api_version;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to initialize Docker connection:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this._dockerError = errorMessage;
+      this._connectionStatus.connected = false;
+      this._connectionStatus.error = errorMessage;
+      this._connectionStatus.version = undefined;
+      this._connectionStatus.api_version = undefined;
+    } finally {
+      this._isConnecting = false;
+    }
+  }
+
+  async refreshConnectionStatus() {
+    try {
+      const status = await getDockerConnectionStatus();
+      this._connectionStatus.connected = status.connected;
+      this._connectionStatus.error = status.error;
+      this._connectionStatus.version = status.version;
+      this._connectionStatus.api_version = status.api_version;
+      return status;
+    } catch (error) {
+      console.error('Failed to refresh connection status:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this._dockerError = errorMessage;
+      this._connectionStatus.connected = false;
+      this._connectionStatus.error = errorMessage;
+      this._connectionStatus.version = undefined;
+      this._connectionStatus.api_version = undefined;
+      return null;
+    }
+  }
+
+  async connectToDocker() {
+    try {
+      this._isConnecting = true;
+      this._dockerError = null;
+
       const connected = await connectDocker();
       if (connected) {
-        const newStatus = await getDockerConnectionStatus();
-        _connectionStatus.connected = newStatus.connected;
-        _connectionStatus.error = newStatus.error;
-        _connectionStatus.version = newStatus.version;
-        _connectionStatus.api_version = newStatus.api_version;
+        await this.refreshConnectionStatus();
       }
+      return connected;
+    } catch (error) {
+      console.error('Failed to connect to Docker:', error);
+      this._dockerError = error instanceof Error ? error.message : 'Unknown error';
+      return false;
+    } finally {
+      this._isConnecting = false;
     }
-  } catch (error) {
-    console.error('Failed to initialize Docker connection:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    _dockerError.value = errorMessage;
-    _connectionStatus.connected = false;
-    _connectionStatus.error = errorMessage;
-    _connectionStatus.version = undefined;
-    _connectionStatus.api_version = undefined;
-  } finally {
-    _isConnecting.value = false;
   }
-}
 
-export async function refreshConnectionStatus() {
-  try {
-    const status = await getDockerConnectionStatus();
-    _connectionStatus.connected = status.connected;
-    _connectionStatus.error = status.error;
-    _connectionStatus.version = status.version;
-    _connectionStatus.api_version = status.api_version;
-    return status;
-  } catch (error) {
-    console.error('Failed to refresh connection status:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    _dockerError.value = errorMessage;
-    _connectionStatus.connected = false;
-    _connectionStatus.error = errorMessage;
-    _connectionStatus.version = undefined;
-    _connectionStatus.api_version = undefined;
-    return null;
-  }
-}
-
-export async function connectToDocker() {
-  try {
-    _isConnecting.value = true;
-    _dockerError.value = null;
-
-    const connected = await connectDocker();
-    if (connected) {
-      await refreshConnectionStatus();
+  async disconnectFromDocker() {
+    try {
+      await disconnectDocker();
+      this._connectionStatus.connected = false;
+      this._connectionStatus.error = undefined;
+      this._connectionStatus.version = undefined;
+      this._connectionStatus.api_version = undefined;
+      this._systemInfo = null;
+      this._systemStats = null;
+    } catch (error) {
+      console.error('Failed to disconnect from Docker:', error);
+      this._dockerError = error instanceof Error ? error.message : 'Unknown error';
     }
-    return connected;
-  } catch (error) {
-    console.error('Failed to connect to Docker:', error);
-    _dockerError.value = error instanceof Error ? error.message : 'Unknown error';
-    return false;
-  } finally {
-    _isConnecting.value = false;
-  }
-}
-
-export async function disconnectFromDocker() {
-  try {
-    await disconnectDocker();
-    _connectionStatus.connected = false;
-    _connectionStatus.error = undefined;
-    _connectionStatus.version = undefined;
-    _connectionStatus.api_version = undefined;
-    _systemInfo.value = null;
-    _systemStats.value = null;
-  } catch (error) {
-    console.error('Failed to disconnect from Docker:', error);
-    _dockerError.value = error instanceof Error ? error.message : 'Unknown error';
-  }
-}
-
-export async function loadSystemInfo() {
-  try {
-    _isLoadingSystemInfo.value = true;
-    _dockerError.value = null;
-
-    const info = await getSystemInfo();
-    _systemInfo.value = info;
-    return info;
-  } catch (error) {
-    console.error('Failed to load system info:', error);
-    _dockerError.value = error instanceof Error ? error.message : 'Unknown error';
-    return null;
-  } finally {
-    _isLoadingSystemInfo.value = false;
-  }
-}
-
-export async function loadSystemStats() {
-  try {
-    _isLoadingStats.value = true;
-    _dockerError.value = null;
-
-    const stats = await getSystemStats();
-    _systemStats.value = stats;
-    return stats;
-  } catch (error) {
-    console.error('Failed to load system stats:', error);
-    _dockerError.value = error instanceof Error ? error.message : 'Unknown error';
-    return null;
-  } finally {
-    _isLoadingStats.value = false;
-  }
-}
-
-// Set error function
-export function setDockerError(error: string | null) {
-  _dockerError.value = error;
-}
-
-// Auto-refresh functionality
-let refreshInterval: ReturnType<typeof setInterval> | null = null;
-
-export function startAutoRefresh(intervalMs: number = 5000) {
-  if (refreshInterval) {
-    clearInterval(refreshInterval);
   }
 
-  refreshInterval = setInterval(async () => {
-    const status = await refreshConnectionStatus();
-    if (status?.connected) {
-      await loadSystemStats();
+  async loadSystemInfo() {
+    try {
+      this._isLoadingSystemInfo = true;
+      this._dockerError = null;
+
+      const info = await getSystemInfo();
+      this._systemInfo = info;
+      return info;
+    } catch (error) {
+      console.error('Failed to load system info:', error);
+      this._dockerError = error instanceof Error ? error.message : 'Unknown error';
+      return null;
+    } finally {
+      this._isLoadingSystemInfo = false;
     }
-  }, intervalMs);
-}
+  }
 
-export function stopAutoRefresh() {
-  if (refreshInterval) {
-    clearInterval(refreshInterval);
-    refreshInterval = null;
+  async loadSystemStats() {
+    try {
+      this._isLoadingStats = true;
+      this._dockerError = null;
+
+      const stats = await getSystemStats();
+      this._systemStats = stats;
+      return stats;
+    } catch (error) {
+      console.error('Failed to load system stats:', error);
+      this._dockerError = error instanceof Error ? error.message : 'Unknown error';
+      return null;
+    } finally {
+      this._isLoadingStats = false;
+    }
+  }
+
+  setDockerError(error: string | null) {
+    this._dockerError = error;
+  }
+
+  startAutoRefresh(intervalMs: number = 5000) {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
+
+    this.refreshInterval = setInterval(async () => {
+      const status = await this.refreshConnectionStatus();
+      if (status?.connected) {
+        await this.loadSystemStats();
+      }
+    }, intervalMs);
+  }
+
+  stopAutoRefresh() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+      this.refreshInterval = null;
+    }
+  }
+
+  cleanup() {
+    this.stopAutoRefresh();
   }
 }
 
-// Cleanup function for component unmounting
-export function cleanup() {
-  stopAutoRefresh();
-}
+// Create and export a singleton instance
+export const dockerStore = new DockerStore();

@@ -386,11 +386,11 @@
   }
 
   .card-content {
-    @apply p-6 pt-0;
+    @apply p-6;
   }
 
   .card-footer {
-    @apply flex items-center p-6 pt-0;
+    @apply flex items-center p-6;
   }
 
   /* Enhanced input components */

@@ -19,6 +19,7 @@
     "chart.js": "^4.4.9",
     "chartjs-adapter-date-fns": "^3.0.0",
     "lucide-svelte": "^0.515.0",
+    "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.10"
   },
   "devDependencies": {
