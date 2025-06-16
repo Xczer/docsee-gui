@@ -161,7 +161,7 @@ class ContainersStore {
   }
 
   // Container operations
-  async loadContainers(showAll: boolean = true) {
+  async loadContainers(showAll = true) {
     try {
       this._isLoadingContainers = true;
       this._containerError = null;
@@ -280,7 +280,7 @@ class ContainersStore {
   }
 
   // Auto-refresh functionality
-  startAutoRefresh(intervalMs: number = 3000) {
+  startAutoRefresh(intervalMs = 3000) {
     if (this.containerRefreshInterval) {
       clearInterval(this.containerRefreshInterval);
     }
