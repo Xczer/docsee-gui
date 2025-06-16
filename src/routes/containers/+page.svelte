@@ -154,23 +154,31 @@
     <Card.Content class="p-4">
       <div class="flex items-center gap-4">
         <div class="flex-1 relative">
-          <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search
+            class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"
+          />
           <Input
             placeholder="Search containers..."
             bind:value={searchTerm}
             class="pl-10"
           />
         </div>
-        <Select.Root>
+        <Select.Root type="single" bind:value={statusFilter}>
           <Select.Trigger class="w-[180px]">
             <Filter class="h-4 w-4 mr-2" />
-            <Select.Value placeholder="Filter by status" />
+            {statusFilter === "all"
+              ? "Filter by status"
+              : statusFilter === "running"
+                ? "Running"
+                : statusFilter === "stopped"
+                  ? "Stopped"
+                  : "Paused"}
           </Select.Trigger>
           <Select.Content>
-            <Select.Item value="all" onclick={() => statusFilter = 'all'}>All Status</Select.Item>
-            <Select.Item value="running" onclick={() => statusFilter = 'running'}>Running</Select.Item>
-            <Select.Item value="stopped" onclick={() => statusFilter = 'stopped'}>Stopped</Select.Item>
-            <Select.Item value="paused" onclick={() => statusFilter = 'paused'}>Paused</Select.Item>
+            <Select.Item value="all">All Status</Select.Item>
+            <Select.Item value="running">Running</Select.Item>
+            <Select.Item value="stopped">Stopped</Select.Item>
+            <Select.Item value="paused">Paused</Select.Item>
           </Select.Content>
         </Select.Root>
       </div>
@@ -213,7 +221,7 @@
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {#each filteredContainers as container}
+            {#each filteredContainers() as container}
               {@const statusBadge = getStatusBadge(container.status)}
               {@const StatusIcon = getStatusIcon(container.status)}
               <Table.Row class="group">
@@ -236,8 +244,11 @@
                   <div class="font-mono text-sm">{container.image}</div>
                 </Table.Cell>
                 <Table.Cell>
-                  <Badge variant={statusBadge.variant} class="{statusBadge.class} gap-1.5">
-                    <svelte:component this={StatusIcon} class="h-3 w-3" />
+                  <Badge
+                    variant={statusBadge.variant}
+                    class="{statusBadge.class} gap-1.5"
+                  >
+                    <StatusIcon class="h-3 w-3" />
                     {container.status}
                   </Badge>
                 </Table.Cell>
@@ -253,11 +264,7 @@
                 <Table.Cell>
                   <DropdownMenu.Root>
                     <DropdownMenu.Trigger>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        class="h-8 w-8"
-                      >
+                      <Button variant="ghost" size="icon" class="h-8 w-8">
                         <MoreHorizontal class="h-4 w-4" />
                       </Button>
                     </DropdownMenu.Trigger>

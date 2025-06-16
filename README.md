@@ -5,64 +5,64 @@ A modern, lightweight Docker management application built with Tauri and SvelteK
 ## 🚀 Version 1.0 Features
 
 ### ✅ **Core Foundation** (Completed)
-- [x] Docker daemon connection and auto-discovery
-- [x] Modern UI with SvelteKit + TailwindCSS + shadcn-svelte
-- [x] Real-time connection monitoring
-- [x] Type-safe Rust backend with Bollard
-- [x] Cross-platform support (Windows, macOS, Linux)
+- [ ] Docker daemon connection and auto-discovery
+- [ ] Modern UI with SvelteKit + TailwindCSS + shadcn-svelte
+- [ ] Real-time connection monitoring
+- [ ] Type-safe Rust backend with Bollard
+- [ ] Cross-platform support (Windows, macOS, Linux)
 
 ### ✅ **Dashboard** (Completed)
-- [x] Overview statistics (containers, images, system info)
-- [x] Recent containers list
-- [x] Connection status monitoring
-- [x] Quick navigation to main features
+- [ ] Overview statistics (containers, images, system info)
+- [ ] Recent containers list
+- [ ] Connection status monitoring
+- [ ] Quick navigation to main features
 
 ### ✅ **Container Management** (Completed)
-- [x] List all containers with filtering (all/running/stopped)
-- [x] Basic operations: start, stop, restart, remove
-- [x] Container search functionality
-- [x] **View container logs** with real-time streaming
-- [x] **Container statistics** and resource monitoring
-- [x] Container details and inspection
+- [ ] List all containers with filtering (all/running/stopped)
+- [ ] Basic operations: start, stop, restart, remove
+- [ ] Container search functionality
+- [ ] **View container logs** with real-time streaming
+- [ ] **Container statistics** and resource monitoring
+- [ ] Container details and inspection
 
 ### ✅ **Image Management** (Completed)
-- [x] List all Docker images
-- [x] Remove images
-- [x] Image search and filtering
-- [x] **Pull images** from registries
-- [x] **Image details** and layer information
+- [ ] List all Docker images
+- [ ] Remove images
+- [ ] Image search and filtering
+- [ ] **Pull images** from registries
+- [ ] **Image details** and layer information
 
 ### 📋 **Network Management** (✅ Version 1.0 MVP)
-- [x] List Docker networks
-- [x] Remove networks
-- [x] Network details and connected containers
-- [x] Network search and filtering
-- [x] Prune unused networks
+- [ ] List Docker networks
+- [ ] Remove networks
+- [ ] Network details and connected containers
+- [ ] Network search and filtering
+- [ ] Prune unused networks
 
 ### 💾 **Volume Management** (✅ Version 1.0 MVP)
-- [x] List Docker volumes
-- [x] Remove volumes (with force option)
-- [x] Volume details and usage
-- [x] Volume search and filtering
-- [x] Prune unused volumes with space reclaimed reporting
+- [ ] List Docker volumes
+- [ ] Remove volumes (with force option)
+- [ ] Volume details and usage
+- [ ] Volume search and filtering
+- [ ] Prune unused volumes with space reclaimed reporting
 
 ### 🖥️ **Container Shell Access** (✅ Version 1.0 MVP)
-- [x] Execute shell commands in running containers
-- [x] Interactive terminal session with command history
-- [x] Command output display with terminal styling
-- [x] Navigation between shell, logs, and stats
+- [ ] Execute shell commands in running containers
+- [ ] Interactive terminal session with command history
+- [ ] Command output display with terminal styling
+- [ ] Navigation between shell, logs, and stats
 
 ### ✅ **User Experience** (Completed)
-- [x] Responsive design for all screen sizes
-- [x] Loading states and error handling
-- [x] Real-time updates and auto-refresh
-- [x] **Dark mode support** with light/dark/auto themes
-- [x] **Search functionality** across all resources
+- [ ] Responsive design for all screen sizes
+- [ ] Loading states and error handling
+- [ ] Real-time updates and auto-refresh
+- [ ] **Dark mode support** with light/dark/auto themes
+- [ ] **Search functionality** across all resources
 
 ### ✅ **System Information** (Completed)
-- [x] Docker version and system details
-- [x] Resource usage overview
-- [x] Connection management
+- [ ] Docker version and system details
+- [ ] Resource usage overview
+- [ ] Connection management
 
 ---
 

@@ -139,10 +139,14 @@
       <Card.Content class="p-6">
         <div class="flex items-center justify-between">
           <div class="space-y-1">
-            <p class="text-sm font-medium text-muted-foreground">Total Volumes</p>
+            <p class="text-sm font-medium text-muted-foreground">
+              Total Volumes
+            </p>
             <p class="text-2xl font-bold">{volumes.length}</p>
           </div>
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary"
+          >
             <HardDrive class="h-5 w-5" />
           </div>
         </div>
@@ -154,9 +158,13 @@
         <div class="flex items-center justify-between">
           <div class="space-y-1">
             <p class="text-sm font-medium text-muted-foreground">In Use</p>
-            <p class="text-2xl font-bold text-success">{volumes.filter(v => v.containers > 0).length}</p>
+            <p class="text-2xl font-bold text-success">
+              {volumes.filter((v) => v.containers > 0).length}
+            </p>
           </div>
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10 text-success">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10 text-success"
+          >
             <Database class="h-5 w-5" />
           </div>
         </div>
@@ -168,9 +176,13 @@
         <div class="flex items-center justify-between">
           <div class="space-y-1">
             <p class="text-sm font-medium text-muted-foreground">Unused</p>
-            <p class="text-2xl font-bold text-warning">{volumes.filter(v => v.containers === 0).length}</p>
+            <p class="text-2xl font-bold text-warning">
+              {volumes.filter((v) => v.containers === 0).length}
+            </p>
           </div>
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-warning/10 text-warning">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-lg bg-warning/10 text-warning"
+          >
             <Folder class="h-5 w-5" />
           </div>
         </div>
@@ -184,7 +196,9 @@
             <p class="text-sm font-medium text-muted-foreground">Total Size</p>
             <p class="text-2xl font-bold">5.0GB</p>
           </div>
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-chart-3/10 text-chart-3">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-lg bg-chart-3/10 text-chart-3"
+          >
             <HardDrive class="h-5 w-5" />
           </div>
         </div>
@@ -197,22 +211,28 @@
     <Card.Content class="p-4">
       <div class="flex items-center gap-4">
         <div class="flex-1 relative">
-          <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search
+            class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"
+          />
           <Input
             placeholder="Search volumes..."
             bind:value={searchTerm}
             class="pl-10"
           />
         </div>
-        <Select.Root>
+        <Select.Root type="single" bind:value={usageFilter}>
           <Select.Trigger class="w-[180px]">
             <Filter class="h-4 w-4 mr-2" />
-            <Select.Value placeholder="Filter by usage" />
+            {usageFilter === "all"
+              ? "Filter by usage"
+              : usageFilter === "used"
+                ? "In Use"
+                : "Unused"}
           </Select.Trigger>
           <Select.Content>
-            <Select.Item value="all" onclick={() => usageFilter = 'all'}>All Volumes</Select.Item>
-            <Select.Item value="used" onclick={() => usageFilter = 'used'}>In Use</Select.Item>
-            <Select.Item value="unused" onclick={() => usageFilter = 'unused'}>Unused</Select.Item>
+            <Select.Item value="all">All Volumes</Select.Item>
+            <Select.Item value="used">In Use</Select.Item>
+            <Select.Item value="unused">Unused</Select.Item>
           </Select.Content>
         </Select.Root>
       </div>
@@ -255,11 +275,13 @@
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {#each filteredVolumes as volume}
+            {#each filteredVolumes() as volume}
               <Table.Row class="group">
                 <Table.Cell class="font-medium">
                   <div class="flex items-center gap-3">
-                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-muted group-hover:bg-background transition-colors">
+                    <div
+                      class="flex h-8 w-8 items-center justify-center rounded-lg bg-muted group-hover:bg-background transition-colors"
+                    >
                       <HardDrive class="h-4 w-4" />
                     </div>
                     <div class="font-medium">{volume.name}</div>
@@ -273,7 +295,9 @@
                 </Table.Cell>
                 <Table.Cell>
                   <div class="flex items-center gap-2 max-w-[300px]">
-                    <code class="font-mono text-xs text-muted-foreground truncate">
+                    <code
+                      class="font-mono text-xs text-muted-foreground truncate"
+                    >
                       {volume.mountpoint}
                     </code>
                     <Button
@@ -291,13 +315,17 @@
                 </Table.Cell>
                 <Table.Cell>
                   {#if volume.containers > 0}
-                    <Badge class="bg-success text-success-foreground hover:bg-success/90 gap-1">
+                    <Badge
+                      class="bg-success text-success-foreground hover:bg-success/90 gap-1"
+                    >
                       <Database class="h-3 w-3" />
                       {volume.containers}
                     </Badge>
                   {:else}
                     <Badge variant="secondary" class="gap-1">
-                      <div class="h-2 w-2 rounded-full bg-muted-foreground"></div>
+                      <div
+                        class="h-2 w-2 rounded-full bg-muted-foreground"
+                      ></div>
                       Unused
                     </Badge>
                   {/if}
@@ -308,11 +336,7 @@
                 <Table.Cell>
                   <DropdownMenu.Root>
                     <DropdownMenu.Trigger>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        class="h-8 w-8"
-                      >
+                      <Button variant="ghost" size="icon" class="h-8 w-8">
                         <MoreHorizontal class="h-4 w-4" />
                       </Button>
                     </DropdownMenu.Trigger>

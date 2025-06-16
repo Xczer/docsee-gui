@@ -82,7 +82,7 @@
   // Filtered images
   let filteredImages = $derived(() => {
     return images.filter((image) => {
-      const matchesSearch = 
+      const matchesSearch =
         image.repository.toLowerCase().includes(searchTerm.toLowerCase()) ||
         image.tag.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesUsage =
@@ -129,10 +129,14 @@
       <Card.Content class="p-6">
         <div class="flex items-center justify-between">
           <div class="space-y-1">
-            <p class="text-sm font-medium text-muted-foreground">Total Images</p>
+            <p class="text-sm font-medium text-muted-foreground">
+              Total Images
+            </p>
             <p class="text-2xl font-bold">{images.length}</p>
           </div>
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary"
+          >
             <Image class="h-5 w-5" />
           </div>
         </div>
@@ -144,9 +148,13 @@
         <div class="flex items-center justify-between">
           <div class="space-y-1">
             <p class="text-sm font-medium text-muted-foreground">In Use</p>
-            <p class="text-2xl font-bold text-success">{images.filter(img => img.inUse).length}</p>
+            <p class="text-2xl font-bold text-success">
+              {images.filter((img) => img.inUse).length}
+            </p>
           </div>
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10 text-success">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10 text-success"
+          >
             <Play class="h-5 w-5" />
           </div>
         </div>
@@ -160,7 +168,9 @@
             <p class="text-sm font-medium text-muted-foreground">Total Size</p>
             <p class="text-2xl font-bold">1.1GB</p>
           </div>
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-chart-3/10 text-chart-3">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-lg bg-chart-3/10 text-chart-3"
+          >
             <HardDrive class="h-5 w-5" />
           </div>
         </div>
@@ -173,22 +183,28 @@
     <Card.Content class="p-4">
       <div class="flex items-center gap-4">
         <div class="flex-1 relative">
-          <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search
+            class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"
+          />
           <Input
             placeholder="Search images..."
             bind:value={searchTerm}
             class="pl-10"
           />
         </div>
-        <Select.Root>
+        <Select.Root type="single" bind:value={usageFilter}>
           <Select.Trigger class="w-[180px]">
             <Filter class="h-4 w-4 mr-2" />
-            <Select.Value placeholder="Filter by usage" />
+            {usageFilter === "all"
+              ? "Filter by usage"
+              : usageFilter === "used"
+                ? "In Use"
+                : "Unused"}
           </Select.Trigger>
           <Select.Content>
-            <Select.Item value="all" onclick={() => usageFilter = 'all'}>All Images</Select.Item>
-            <Select.Item value="used" onclick={() => usageFilter = 'used'}>In Use</Select.Item>
-            <Select.Item value="unused" onclick={() => usageFilter = 'unused'}>Unused</Select.Item>
+            <Select.Item value="all">All Images</Select.Item>
+            <Select.Item value="used">In Use</Select.Item>
+            <Select.Item value="unused">Unused</Select.Item>
           </Select.Content>
         </Select.Root>
       </div>
@@ -231,11 +247,13 @@
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {#each filteredImages as image}
+            {#each filteredImages() as image}
               <Table.Row class="group">
                 <Table.Cell class="font-medium">
                   <div class="flex items-center gap-3">
-                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-muted group-hover:bg-background transition-colors">
+                    <div
+                      class="flex h-8 w-8 items-center justify-center rounded-lg bg-muted group-hover:bg-background transition-colors"
+                    >
                       <Image class="h-4 w-4" />
                     </div>
                     <div class="font-medium">{image.repository}</div>
@@ -263,13 +281,17 @@
                 </Table.Cell>
                 <Table.Cell>
                   {#if image.inUse}
-                    <Badge class="bg-success text-success-foreground hover:bg-success/90 gap-1">
+                    <Badge
+                      class="bg-success text-success-foreground hover:bg-success/90 gap-1"
+                    >
                       <Play class="h-3 w-3" />
                       In Use
                     </Badge>
                   {:else}
                     <Badge variant="secondary" class="gap-1">
-                      <div class="h-2 w-2 rounded-full bg-muted-foreground"></div>
+                      <div
+                        class="h-2 w-2 rounded-full bg-muted-foreground"
+                      ></div>
                       Unused
                     </Badge>
                   {/if}
@@ -277,11 +299,7 @@
                 <Table.Cell>
                   <DropdownMenu.Root>
                     <DropdownMenu.Trigger>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        class="h-8 w-8"
-                      >
+                      <Button variant="ghost" size="icon" class="h-8 w-8">
                         <MoreHorizontal class="h-4 w-4" />
                       </Button>
                     </DropdownMenu.Trigger>
@@ -299,7 +317,10 @@
                         Export
                       </DropdownMenu.Item>
                       <DropdownMenu.Separator />
-                      <DropdownMenu.Item class="text-destructive" disabled={image.inUse}>
+                      <DropdownMenu.Item
+                        class="text-destructive"
+                        disabled={image.inUse}
+                      >
                         <Trash2 class="mr-2 h-4 w-4" />
                         Remove
                       </DropdownMenu.Item>

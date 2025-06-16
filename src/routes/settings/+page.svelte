@@ -1,8 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import {
-    Settings,
-    Docker,
     Monitor,
     Bell,
     Shield,
@@ -11,10 +9,8 @@
     RotateCcw,
     Info,
     ExternalLink,
-    Cpu,
-    HardDrive,
-    Network,
     Zap,
+    Container
   } from "lucide-svelte";
 
   // Import shadcn-svelte components
@@ -132,11 +128,11 @@
       </p>
     </div>
     <div class="flex items-center gap-3">
-      <Button variant="outline" on:click={resetSettings}>
+      <Button variant="outline" onclick={resetSettings}>
         <RotateCcw class="h-4 w-4 mr-2" />
         Reset to Default
       </Button>
-      <Button on:click={saveSettings} disabled={loading}>
+      <Button onclick={saveSettings} disabled={loading}>
         <Save class="h-4 w-4 mr-2" />
         {loading ? "Saving..." : "Save Changes"}
       </Button>
@@ -158,7 +154,7 @@
   <Tabs.Root value="docker" class="space-y-4">
     <Tabs.List class="grid w-full grid-cols-5">
       <Tabs.Trigger value="docker" class="gap-2">
-        <Docker class="h-4 w-4" />
+        <Container class="h-4 w-4" />
         Docker
       </Tabs.Trigger>
       <Tabs.Trigger value="interface" class="gap-2">
@@ -184,7 +180,7 @@
       <Card.Root>
         <Card.Header>
           <Card.Title class="flex items-center gap-2">
-            <Docker class="h-5 w-5" />
+            <Container class="h-5 w-5" />
             Docker Connection
           </Card.Title>
           <Card.Description>
@@ -206,15 +202,17 @@
 
           <div class="space-y-2">
             <Label for="api-version">API Version</Label>
-            <Select.Root>
-              <Select.Trigger>
-                <Select.Value placeholder="Select API version" />
+            <Select.Root type="single" bind:value={settings.docker.apiVersion}>
+              <Select.Trigger class="w-[180px]">
+                {settings.docker.apiVersion === "auto"
+                  ? "Select API version"
+                  : `v${settings.docker.apiVersion}`}
               </Select.Trigger>
               <Select.Content>
-                <Select.Item value="auto" onclick={() => settings.docker.apiVersion = 'auto'}>Auto-detect</Select.Item>
-                <Select.Item value="1.41" onclick={() => settings.docker.apiVersion = '1.41'}>1.41</Select.Item>
-                <Select.Item value="1.40" onclick={() => settings.docker.apiVersion = '1.40'}>1.40</Select.Item>
-                <Select.Item value="1.39" onclick={() => settings.docker.apiVersion = '1.39'}>1.39</Select.Item>
+                <Select.Item value="auto">Auto-detect</Select.Item>
+                <Select.Item value="1.41">v1.41</Select.Item>
+                <Select.Item value="1.40">v1.40</Select.Item>
+                <Select.Item value="1.39">v1.39</Select.Item>
               </Select.Content>
             </Select.Root>
           </div>
@@ -247,7 +245,9 @@
               <div class="h-2 w-2 rounded-full bg-success-foreground"></div>
               Connected
             </Badge>
-            <span class="text-sm text-muted-foreground">Docker Engine v24.0.6</span>
+            <span class="text-sm text-muted-foreground"
+              >Docker Engine v24.0.6</span
+            >
           </div>
         </Card.Content>
       </Card.Root>
@@ -268,14 +268,18 @@
         <Card.Content class="space-y-6">
           <div class="space-y-2">
             <Label>Theme</Label>
-            <Select.Root>
-              <Select.Trigger>
-                <Select.Value placeholder="Select theme" />
+            <Select.Root type="single" bind:value={settings.ui.theme}>
+              <Select.Trigger class="w-[180px]">
+                {settings.ui.theme === "light"
+                  ? "Light"
+                  : settings.ui.theme === "dark"
+                    ? "Dark"
+                    : "System"}
               </Select.Trigger>
               <Select.Content>
-                <Select.Item value="light" onclick={() => settings.ui.theme = 'light'}>Light</Select.Item>
-                <Select.Item value="dark" onclick={() => settings.ui.theme = 'dark'}>Dark</Select.Item>
-                <Select.Item value="system" onclick={() => settings.ui.theme = 'system'}>System</Select.Item>
+                <Select.Item value="light">Light</Select.Item>
+                <Select.Item value="dark">Dark</Select.Item>
+                <Select.Item value="system">System</Select.Item>
               </Select.Content>
             </Select.Root>
           </div>
@@ -361,8 +365,8 @@
                 Notify on container start, stop, and errors
               </p>
             </div>
-            <Switch 
-              bind:checked={settings.notifications.containerEvents} 
+            <Switch
+              bind:checked={settings.notifications.containerEvents}
               disabled={!settings.notifications.enabled}
             />
           </div>
@@ -374,7 +378,7 @@
                 Notify on Docker daemon issues and warnings
               </p>
             </div>
-            <Switch 
+            <Switch
               bind:checked={settings.notifications.systemAlerts}
               disabled={!settings.notifications.enabled}
             />
@@ -387,7 +391,7 @@
                 Play sound alerts for critical events
               </p>
             </div>
-            <Switch 
+            <Switch
               bind:checked={settings.notifications.soundEnabled}
               disabled={!settings.notifications.enabled}
             />

@@ -1,32 +1,18 @@
 <!-- src/app.html -->
 <!doctype html>
 <html lang="en" class="light">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%sveltekit.assets%/favicon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>DocSee - Professional Docker Management</title>
 
-    <!-- Theme initialization script - must run before body renders -->
-    <script>
-      // Prevent flash of wrong theme
-      (function() {
-        const theme = localStorage.getItem('mode-watcher-mode');
-        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+<head>
+  <meta charset="utf-8" />
+  <link rel="icon" href="%sveltekit.assets%/favicon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DocSee - Professional Docker Management</title>
+  %sveltekit.head%
+</head>
 
-        if (theme === 'dark' || (!theme && systemPrefersDark)) {
-          document.documentElement.classList.remove('light');
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-          document.documentElement.classList.add('light');
-        }
-      })();
-    </script>
+<body data-sveltekit-preload-data="hover" class="min-h-screen bg-background font-sans antialiased">
+  <div style="display: contents">%sveltekit.body%</div>
+  <div id="sonner-toaster"></div>
+</body>
 
-    %sveltekit.head%
-  </head>
-  <body data-sveltekit-preload-data="hover" class="min-h-screen bg-background font-sans antialiased">
-    <div style="display: contents">%sveltekit.body%</div>
-  </body>
 </html>

@@ -122,9 +122,15 @@
   function getDriverBadge(driver: string) {
     switch (driver) {
       case "bridge":
-        return { variant: "default" as const, class: "bg-primary text-primary-foreground" };
+        return {
+          variant: "default" as const,
+          class: "bg-primary text-primary-foreground",
+        };
       case "host":
-        return { variant: "secondary" as const, class: "bg-success text-success-foreground" };
+        return {
+          variant: "secondary" as const,
+          class: "bg-success text-success-foreground",
+        };
       case "null":
         return { variant: "outline" as const, class: "" };
       default:
@@ -164,10 +170,14 @@
       <Card.Content class="p-6">
         <div class="flex items-center justify-between">
           <div class="space-y-1">
-            <p class="text-sm font-medium text-muted-foreground">Total Networks</p>
+            <p class="text-sm font-medium text-muted-foreground">
+              Total Networks
+            </p>
             <p class="text-2xl font-bold">{networks.length}</p>
           </div>
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary"
+          >
             <Network class="h-5 w-5" />
           </div>
         </div>
@@ -178,10 +188,16 @@
       <Card.Content class="p-6">
         <div class="flex items-center justify-between">
           <div class="space-y-1">
-            <p class="text-sm font-medium text-muted-foreground">Bridge Networks</p>
-            <p class="text-2xl font-bold text-primary">{networks.filter(n => n.driver === 'bridge').length}</p>
+            <p class="text-sm font-medium text-muted-foreground">
+              Bridge Networks
+            </p>
+            <p class="text-2xl font-bold text-primary">
+              {networks.filter((n) => n.driver === "bridge").length}
+            </p>
           </div>
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary"
+          >
             <Link class="h-5 w-5" />
           </div>
         </div>
@@ -192,10 +208,16 @@
       <Card.Content class="p-6">
         <div class="flex items-center justify-between">
           <div class="space-y-1">
-            <p class="text-sm font-medium text-muted-foreground">Connected Containers</p>
-            <p class="text-2xl font-bold text-success">{networks.reduce((sum, n) => sum + n.containers, 0)}</p>
+            <p class="text-sm font-medium text-muted-foreground">
+              Connected Containers
+            </p>
+            <p class="text-2xl font-bold text-success">
+              {networks.reduce((sum, n) => sum + n.containers, 0)}
+            </p>
           </div>
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10 text-success">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10 text-success"
+          >
             <Globe class="h-5 w-5" />
           </div>
         </div>
@@ -206,10 +228,16 @@
       <Card.Content class="p-6">
         <div class="flex items-center justify-between">
           <div class="space-y-1">
-            <p class="text-sm font-medium text-muted-foreground">Internal Networks</p>
-            <p class="text-2xl font-bold text-warning">{networks.filter(n => n.internal).length}</p>
+            <p class="text-sm font-medium text-muted-foreground">
+              Internal Networks
+            </p>
+            <p class="text-2xl font-bold text-warning">
+              {networks.filter((n) => n.internal).length}
+            </p>
           </div>
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-warning/10 text-warning">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-lg bg-warning/10 text-warning"
+          >
             <Shield class="h-5 w-5" />
           </div>
         </div>
@@ -222,23 +250,31 @@
     <Card.Content class="p-4">
       <div class="flex items-center gap-4">
         <div class="flex-1 relative">
-          <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search
+            class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"
+          />
           <Input
             placeholder="Search networks..."
             bind:value={searchTerm}
             class="pl-10"
           />
         </div>
-        <Select.Root>
+        <Select.Root type="single" bind:value={driverFilter}>
           <Select.Trigger class="w-[180px]">
             <Filter class="h-4 w-4 mr-2" />
-            <Select.Value placeholder="Filter by driver" />
+            {driverFilter === "all"
+              ? "Filter by driver"
+              : driverFilter === "bridge"
+                ? "Bridge"
+                : driverFilter === "host"
+                  ? "Host"
+                  : "None"}
           </Select.Trigger>
           <Select.Content>
-            <Select.Item value="all" onclick={() => driverFilter = 'all'}>All Drivers</Select.Item>
-            <Select.Item value="bridge" onclick={() => driverFilter = 'bridge'}>Bridge</Select.Item>
-            <Select.Item value="host" onclick={() => driverFilter = 'host'}>Host</Select.Item>
-            <Select.Item value="null" onclick={() => driverFilter = 'null'}>None</Select.Item>
+            <Select.Item value="all">All Drivers</Select.Item>
+            <Select.Item value="bridge">Bridge</Select.Item>
+            <Select.Item value="host">Host</Select.Item>
+            <Select.Item value="null">None</Select.Item>
           </Select.Content>
         </Select.Root>
       </div>
@@ -282,13 +318,15 @@
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {#each filteredNetworks as network}
+            {#each filteredNetworks() as network}
               {@const driverBadge = getDriverBadge(network.driver)}
               {@const DriverIcon = getDriverIcon(network.driver)}
               <Table.Row class="group">
                 <Table.Cell class="font-medium">
                   <div class="flex items-center gap-3">
-                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-muted group-hover:bg-background transition-colors">
+                    <div
+                      class="flex h-8 w-8 items-center justify-center rounded-lg bg-muted group-hover:bg-background transition-colors"
+                    >
                       <Network class="h-4 w-4" />
                     </div>
                     <div>
@@ -300,8 +338,11 @@
                   </div>
                 </Table.Cell>
                 <Table.Cell>
-                  <Badge variant={driverBadge.variant} class="{driverBadge.class} gap-1.5">
-                    <svelte:component this={DriverIcon} class="h-3 w-3" />
+                  <Badge
+                    variant={driverBadge.variant}
+                    class="{driverBadge.class} gap-1.5"
+                  >
+                    <DriverIcon class="h-3 w-3" />
                     {network.driver}
                   </Badge>
                 </Table.Cell>
@@ -316,7 +357,10 @@
                 </Table.Cell>
                 <Table.Cell>
                   {#if network.containers > 0}
-                    <Badge variant="secondary" class="bg-success/10 text-success">
+                    <Badge
+                      variant="secondary"
+                      class="bg-success/10 text-success"
+                    >
                       {network.containers}
                     </Badge>
                   {:else}
@@ -329,11 +373,7 @@
                 <Table.Cell>
                   <DropdownMenu.Root>
                     <DropdownMenu.Trigger>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        class="h-8 w-8"
-                      >
+                      <Button variant="ghost" size="icon" class="h-8 w-8">
                         <MoreHorizontal class="h-4 w-4" />
                       </Button>
                     </DropdownMenu.Trigger>
@@ -347,9 +387,10 @@
                         Configure
                       </DropdownMenu.Item>
                       <DropdownMenu.Separator />
-                      <DropdownMenu.Item 
-                        class="text-destructive" 
-                        disabled={network.containers > 0 || ['bridge', 'host', 'none'].includes(network.name)}
+                      <DropdownMenu.Item
+                        class="text-destructive"
+                        disabled={network.containers > 0 ||
+                          ["bridge", "host", "none"].includes(network.name)}
                       >
                         <Trash2 class="mr-2 h-4 w-4" />
                         Remove
