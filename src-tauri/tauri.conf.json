@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "docsee-gui",
+  "productName": "DocSee",
   "version": "0.1.0",
   "identifier": "com.docsee.app",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Docsee",
+        "title": "DocSee",
         "width": 1920,
         "height": 1080,
         "decorations": false
@@ -31,6 +31,11 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "resources": [],
+    "copyright": "© 2025 Docsee. All rights reserved.",
+    "category": "DeveloperTool",
+    "shortDescription": "The intuitive GUI for your Docker containers",
+    "longDescription": "Docsee revolutionizes Docker management with its sleek, user-friendly interface. Visualize your containers, manage images, and monitor performance with unprecedented clarity. Designed for developers who want the power of Docker without the command-line complexity, Docsee brings container management into the modern age with real-time metrics, one-click operations, and intelligent organization tools. Perfect for both Docker beginners and seasoned professionals looking to streamline their workflow."
   }
 }
