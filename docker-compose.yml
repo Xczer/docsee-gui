@@ -1,0 +1,38 @@
+services:
+  # Build service - for creating production builds only
+  docsee-build:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: docsee-gui-builder
+    volumes:
+      - .:/workspace
+      - build-cache:/root/.cargo/registry
+      - build-target-cache:/workspace/src-tauri/target
+      - build-output:/artifacts
+    working_dir: /workspace
+    profiles: ["build"]
+
+  # Development tools extraction service
+  dev-tools:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev-deps
+    container_name: docsee-dev-tools
+    volumes:
+      - .:/workspace
+      - dev-tools-cache:/root/.cargo
+    working_dir: /workspace
+    profiles: ["dev-setup"]
+
+volumes:
+  build-cache:
+    driver: local
+  build-target-cache:
+    driver: local
+  build-output:
+    driver: local
+  dev-tools-cache:
+    driver: local

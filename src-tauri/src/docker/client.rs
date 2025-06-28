@@ -18,10 +18,10 @@ impl DockerClient {
     pub async fn connect(&self) -> Result<bool> {
         info!("Attempting to connect to Docker daemon...");
         let mut client_guard = self.client.lock().await;
-        
+
         // Try different connection methods with detailed logging
         let docker_result = self.try_connect_methods().await;
-        
+
         match docker_result {
             Ok(docker) => {
                 info!("Docker client created, testing connection...");
@@ -50,7 +50,7 @@ impl DockerClient {
 
     async fn try_connect_methods(&self) -> Result<Docker> {
         info!("Trying various Docker connection methods...");
-        
+
         // Method 1: Unix socket (most common on Linux/macOS)
         #[cfg(unix)]
         {
@@ -145,6 +145,7 @@ impl DockerClient {
         info!("Docker client disconnected");
     }
 
+    #[allow(dead_code)]
     pub async fn is_connected(&self) -> bool {
         let client_guard = self.client.lock().await;
         client_guard.is_some()
