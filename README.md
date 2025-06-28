@@ -91,6 +91,8 @@ A modern, lightweight Docker management application built with Tauri v2 and Svel
 - **Icons**: lucide-svelte icon library
 - **Performance**: Native desktop app with web technologies
 - **Cross-platform**: Windows, macOS, Linux support
+- **DevOps**: GitHub Actions for CI/CD, automated multi-platform releases
+- **Quality**: Biome for linting, Cargo for Rust tooling, automated security audits
 
 ---
 
@@ -168,6 +170,25 @@ bun tauri dev
 # Build for production
 bun tauri build
 ```
+
+### Automated Releases
+
+DocSee-GUI now features automated multi-platform builds and releases:
+
+```bash
+# Create a new release (requires push access)
+chmod +x scripts/release.sh
+./scripts/release.sh
+
+# Or specify version directly
+./scripts/release.sh 1.0.0
+```
+
+The automated release process:
+1. **Multi-platform builds**: Linux (x64/ARM64), macOS (Intel/Apple Silicon), Windows
+2. **Package formats**: AppImage, DEB, RPM, DMG, MSI, NSIS
+3. **Automated releases**: GitHub releases with checksums and release notes
+4. **Quality gates**: Code quality, security audits, and build validation
 
 ### System Requirements
 - **Runtime**: Docker daemon must be accessible
