@@ -1,307 +1,309 @@
 <!-- src/routes/containers/+page.svelte -->
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
-  import {
-    Container,
-    Play,
-    Square,
-    Pause,
-    RotateCcw,
-    Trash2,
-    Download,
-    Search,
-    Filter,
-    MoreHorizontal,
-    Terminal,
-    FileText,
-    Settings,
-    Plus,
-    RefreshCw,
-    AlertCircle,
-    CheckCircle2,
-    Clock,
-    StopCircle,
-    Activity,
-  } from "lucide-svelte";
+import {
+	Activity,
+	AlertCircle,
+	CheckCircle2,
+	Clock,
+	Container,
+	Download,
+	FileText,
+	Filter,
+	MoreHorizontal,
+	Pause,
+	Play,
+	Plus,
+	RefreshCw,
+	RotateCcw,
+	Search,
+	Settings,
+	Square,
+	StopCircle,
+	Terminal,
+	Trash2,
+} from "lucide-svelte";
+import { onDestroy, onMount } from "svelte";
 
-  // Import shadcn-svelte components
-  import { Button } from "$lib/components/ui/button";
-  import { Badge } from "$lib/components/ui/badge";
-  import * as Card from "$lib/components/ui/card";
-  import * as Table from "$lib/components/ui/table";
-  import { Input } from "$lib/components/ui/input";
-  import * as Select from "$lib/components/ui/select";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
-  import { Skeleton } from "$lib/components/ui/skeleton";
-  import { Separator } from "$lib/components/ui/separator";
-  import * as Alert from "$lib/components/ui/alert";
+import * as Alert from "$lib/components/ui/alert";
+import { Badge } from "$lib/components/ui/badge";
+// Import shadcn-svelte components
+import { Button } from "$lib/components/ui/button";
+import * as Card from "$lib/components/ui/card";
+import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
+import { Input } from "$lib/components/ui/input";
+import * as Select from "$lib/components/ui/select";
+import { Separator } from "$lib/components/ui/separator";
+import { Skeleton } from "$lib/components/ui/skeleton";
+import * as Table from "$lib/components/ui/table";
 
-  // Import stores and types
-  import { containersStore } from "$lib/stores/containers.svelte";
-  import { dockerStore } from "$lib/stores/docker.svelte";
-  import type { Container as ContainerType } from "$lib/types/container";
-  import { LogsViewer, StatsViewer, ShellAccess } from "$lib/components/containers";
-  import { toast } from "svelte-sonner";
+import {
+	LogsViewer,
+	ShellAccess,
+	StatsViewer,
+} from "$lib/components/containers";
+// Import stores and types
+import { containersStore } from "$lib/stores/containers.svelte";
+import { dockerStore } from "$lib/stores/docker.svelte";
+import type { Container as ContainerType } from "$lib/types/container";
+import { toast } from "svelte-sonner";
 
-  // Reactive state using runes
-  // biome-ignore lint/style/useConst: <explanation>
-  let searchTerm = $state("");
-  // biome-ignore lint/style/useConst: <explanation>
-  let statusFilter = $state<string>("all");
-  // biome-ignore lint/style/useConst: <explanation>
-  let sortBy = $state("name");
-	let logsViewerOpen = $state(false);
-	let selectedContainerForLogs = $state<ContainerType | null>(null);
-	let statsViewerOpen = $state(false);
-	let selectedContainerForStats = $state<ContainerType | null>(null);
-	let shellAccessOpen = $state(false);
-	let selectedContainerForShell = $state<ContainerType | null>(null);
+// Reactive state using runes
+// biome-ignore lint/style/useConst: <explanation>
+let searchTerm = $state("");
+// biome-ignore lint/style/useConst: <explanation>
+let statusFilter = $state<string>("all");
+// biome-ignore lint/style/useConst: <explanation>
+let sortBy = $state("name");
+let logsViewerOpen = $state(false);
+let selectedContainerForLogs = $state<ContainerType | null>(null);
+let statsViewerOpen = $state(false);
+let selectedContainerForStats = $state<ContainerType | null>(null);
+let shellAccessOpen = $state(false);
+let selectedContainerForShell = $state<ContainerType | null>(null);
 
-  // Derived values from stores
-  const containers = $derived(containersStore.containers);
-  const isLoadingContainers = $derived(containersStore.isLoadingContainers);
-  const containerError = $derived(containersStore.containerError);
-  const containerOperationInProgress = $derived(
-    containersStore.containerOperationInProgress,
-  );
-  const connectionStatus = $derived(dockerStore.connectionStatus);
+// Derived values from stores
+const containers = $derived(containersStore.containers);
+const isLoadingContainers = $derived(containersStore.isLoadingContainers);
+const containerError = $derived(containersStore.containerError);
+const containerOperationInProgress = $derived(
+	containersStore.containerOperationInProgress,
+);
+const connectionStatus = $derived(dockerStore.connectionStatus);
 
-  // Update store filters when local state changes
-  $effect(() => {
-    containersStore.setContainerSearchTerm(searchTerm);
-  });
+// Update store filters when local state changes
+$effect(() => {
+	containersStore.setContainerSearchTerm(searchTerm);
+});
 
-  $effect(() => {
-    containersStore.setContainerFilter(statusFilter);
-  });
+$effect(() => {
+	containersStore.setContainerFilter(statusFilter);
+});
 
-  $effect(() => {
-    containersStore.setContainerSortBy(sortBy);
-  });
+$effect(() => {
+	containersStore.setContainerSortBy(sortBy);
+});
 
-  // Filtered and sorted containers
-  const filteredContainers = $derived(() => {
-    let filtered = containers;
+// Filtered and sorted containers
+const filteredContainers = $derived(() => {
+	let filtered = containers;
 
-    // Apply status filter
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((container) => {
-        switch (statusFilter) {
-          case "running":
-            return container.state === "running";
-          case "stopped":
-            return (
-              container.state === "exited" || container.state === "created"
-            );
-          case "paused":
-            return container.state === "paused";
-          default:
-            return true;
-        }
-      });
-    }
+	// Apply status filter
+	if (statusFilter !== "all") {
+		filtered = filtered.filter((container) => {
+			switch (statusFilter) {
+				case "running":
+					return container.state === "running";
+				case "stopped":
+					return container.state === "exited" || container.state === "created";
+				case "paused":
+					return container.state === "paused";
+				default:
+					return true;
+			}
+		});
+	}
 
-    // Apply search filter
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (container) =>
-          container.names.some((name) => name.toLowerCase().includes(term)) ||
-          container.image.toLowerCase().includes(term) ||
-          container.id.toLowerCase().includes(term),
-      );
-    }
+	// Apply search filter
+	if (searchTerm.trim()) {
+		const term = searchTerm.toLowerCase();
+		filtered = filtered.filter(
+			(container) =>
+				container.names.some((name) => name.toLowerCase().includes(term)) ||
+				container.image.toLowerCase().includes(term) ||
+				container.id.toLowerCase().includes(term),
+		);
+	}
 
-    // Apply sorting
-    const sorted = [...filtered];
-    sorted.sort((a, b) => {
-      switch (sortBy) {
-        case "name":
-          return (a.names[0] || "").localeCompare(b.names[0] || "");
-        case "status":
-          return a.state.localeCompare(b.state);
-        case "created":
-          return b.created - a.created; // Newest first
-        case "image":
-          return a.image.localeCompare(b.image);
-        default:
-          return 0;
-      }
-    });
+	// Apply sorting
+	const sorted = [...filtered];
+	sorted.sort((a, b) => {
+		switch (sortBy) {
+			case "name":
+				return (a.names[0] || "").localeCompare(b.names[0] || "");
+			case "status":
+				return a.state.localeCompare(b.state);
+			case "created":
+				return b.created - a.created; // Newest first
+			case "image":
+				return a.image.localeCompare(b.image);
+			default:
+				return 0;
+		}
+	});
 
-    return sorted;
-  });
+	return sorted;
+});
 
-  // Status badge configuration
-  function getStatusBadge(status: string) {
-    switch (status) {
-      case "running":
-        return {
-          variant: "default" as const,
-          class: "bg-green-600 text-white hover:bg-green-700",
-          icon: Play,
-        };
-      case "exited":
-      case "stopped":
-        return {
-          variant: "secondary" as const,
-          class: "bg-gray-500 text-white hover:bg-gray-600",
-          icon: StopCircle,
-        };
-      case "paused":
-        return {
-          variant: "default" as const,
-          class: "bg-yellow-600 text-white hover:bg-yellow-700",
-          icon: Pause,
-        };
-      case "created":
-        return {
-          variant: "outline" as const,
-          class: "border-blue-500 text-blue-600",
-          icon: Clock,
-        };
-      case "restarting":
-        return {
-          variant: "default" as const,
-          class: "bg-blue-600 text-white hover:bg-blue-700",
-          icon: RotateCcw,
-        };
-      default:
-        return {
-          variant: "secondary" as const,
-          class: "",
-          icon: AlertCircle,
-        };
-    }
-  }
+// Status badge configuration
+function getStatusBadge(status: string) {
+	switch (status) {
+		case "running":
+			return {
+				variant: "default" as const,
+				class: "bg-green-600 text-white hover:bg-green-700",
+				icon: Play,
+			};
+		case "exited":
+		case "stopped":
+			return {
+				variant: "secondary" as const,
+				class: "bg-gray-500 text-white hover:bg-gray-600",
+				icon: StopCircle,
+			};
+		case "paused":
+			return {
+				variant: "default" as const,
+				class: "bg-yellow-600 text-white hover:bg-yellow-700",
+				icon: Pause,
+			};
+		case "created":
+			return {
+				variant: "outline" as const,
+				class: "border-blue-500 text-blue-600",
+				icon: Clock,
+			};
+		case "restarting":
+			return {
+				variant: "default" as const,
+				class: "bg-blue-600 text-white hover:bg-blue-700",
+				icon: RotateCcw,
+			};
+		default:
+			return {
+				variant: "secondary" as const,
+				class: "",
+				icon: AlertCircle,
+			};
+	}
+}
 
-  // Get container display name
-  function getContainerDisplayName(container: ContainerType) {
-    return (
-      container.names[0]?.replace(/^\//, "") || container.id.substring(0, 12)
-    );
-  }
+// Get container display name
+function getContainerDisplayName(container: ContainerType) {
+	return (
+		container.names[0]?.replace(/^\//, "") || container.id.substring(0, 12)
+	);
+}
 
-  // Format container ports
-  function getContainerPorts(container: ContainerType) {
-    if (!container.ports || container.ports.length === 0) {
-      return "-";
-    }
+// Format container ports
+function getContainerPorts(container: ContainerType) {
+	if (!container.ports || container.ports.length === 0) {
+		return "-";
+	}
 
-    const uniquePorts = new Set<string>();
-    for (const port of container.ports) {
-      if (port.public_port) {
-        uniquePorts.add(`${port.public_port}:${port.private_port}`);
-      } else {
-        uniquePorts.add(`${port.private_port}/${port.type}`);
-      }
-    }
+	const uniquePorts = new Set<string>();
+	for (const port of container.ports) {
+		if (port.public_port) {
+			uniquePorts.add(`${port.public_port}:${port.private_port}`);
+		} else {
+			uniquePorts.add(`${port.private_port}/${port.type}`);
+		}
+	}
 
-    return Array.from(uniquePorts).join(", ");
-  }
+	return Array.from(uniquePorts).join(", ");
+}
 
-  // Format time since created
-  function formatTimeSince(timestamp: number) {
-    const now = Date.now() / 1000;
-    const diff = now - timestamp;
+// Format time since created
+function formatTimeSince(timestamp: number) {
+	const now = Date.now() / 1000;
+	const diff = now - timestamp;
 
-    if (diff < 60) return "Just now";
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return `${Math.floor(diff / 86400)}d ago`;
-  }
+	if (diff < 60) return "Just now";
+	if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+	if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+	return `${Math.floor(diff / 86400)}d ago`;
+}
 
-  // Container actions
-  async function handleContainerAction(
-    action: "start" | "stop" | "restart" | "remove" | "kill",
-    container: ContainerType,
-  ) {
-    try {
-      const success = await containersStore.performContainerAction(
-        action,
-        container.id,
-      );
+// Container actions
+async function handleContainerAction(
+	action: "start" | "stop" | "restart" | "remove" | "kill",
+	container: ContainerType,
+) {
+	try {
+		const success = await containersStore.performContainerAction(
+			action,
+			container.id,
+		);
 
-      if (success) {
-        toast.success(
-          `Successfully ${action === "remove" ? "removed" : `${action}ed`} container ${getContainerDisplayName(container)}`,
-        );
-      } else {
-        throw new Error(containerError || `Failed to ${action} container`);
-      }
-    } catch (error: any) {
-      console.error(`Failed to ${action} container:`, error);
-      toast.error(`Failed to ${action} container: ${error.message}`);
-    }
-  }
+		if (success) {
+			toast.success(
+				`Successfully ${action === "remove" ? "removed" : `${action}ed`} container ${getContainerDisplayName(container)}`,
+			);
+		} else {
+			throw new Error(containerError || `Failed to ${action} container`);
+		}
+	} catch (error: any) {
+		console.error(`Failed to ${action} container:`, error);
+		toast.error(`Failed to ${action} container: ${error.message}`);
+	}
+}
 
-  // Refresh containers
-  async function handleRefresh() {
-    try {
-      await containersStore.loadContainers(true);
-      toast.success("Containers refreshed successfully");
-    } catch (error) {
-      console.error("Failed to refresh containers:", error);
-      toast.error("Failed to refresh containers");
-    }
-  }
+// Refresh containers
+async function handleRefresh() {
+	try {
+		await containersStore.loadContainers(true);
+		toast.success("Containers refreshed successfully");
+	} catch (error) {
+		console.error("Failed to refresh containers:", error);
+		toast.error("Failed to refresh containers");
+	}
+}
 
-  // Export containers (placeholder)
-  function handleExport() {
-    toast.info("Export functionality coming soon!");
-  }
+// Export containers (placeholder)
+function handleExport() {
+	toast.info("Export functionality coming soon!");
+}
 
-  // Create container (placeholder)
-  function handleCreateContainer() {
-    toast.info("Container creation functionality coming soon!");
-  }
+// Create container (placeholder)
+function handleCreateContainer() {
+	toast.info("Container creation functionality coming soon!");
+}
 
-  // View logs
-  function handleViewLogs(container: ContainerType) {
-    selectedContainerForLogs = container;
-    logsViewerOpen = true;
-  }
+// View logs
+function handleViewLogs(container: ContainerType) {
+	selectedContainerForLogs = container;
+	logsViewerOpen = true;
+}
 
-  // View stats
-  function handleViewStats(container: ContainerType) {
-    selectedContainerForStats = container;
-    statsViewerOpen = true;
-  }
+// View stats
+function handleViewStats(container: ContainerType) {
+	selectedContainerForStats = container;
+	statsViewerOpen = true;
+}
 
-  // Shell access
-  function handleShellAccess(container: ContainerType) {
-    selectedContainerForShell = container;
-    shellAccessOpen = true;
-  }
+// Shell access
+function handleShellAccess(container: ContainerType) {
+	selectedContainerForShell = container;
+	shellAccessOpen = true;
+}
 
-  // Initialize on mount
-  onMount(async () => {
-    // Load containers if not already loaded
-    if (containers.length === 0 && !isLoadingContainers) {
-      await containersStore.loadContainers(true);
-    }
+// Initialize on mount
+onMount(async () => {
+	// Load containers if not already loaded
+	if (containers.length === 0 && !isLoadingContainers) {
+		await containersStore.loadContainers(true);
+	}
 
-    // Start auto-refresh
-    containersStore.startAutoRefresh(5000);
-  });
+	// Start auto-refresh
+	containersStore.startAutoRefresh(5000);
+});
 
-  // Effect to pause containers auto-refresh when any viewer is open
-  $effect(() => {
-    if (logsViewerOpen || statsViewerOpen || shellAccessOpen) {
-      // Pause containers auto-refresh when any viewer is open
-      containersStore.stopAutoRefresh();
-    } else {
-      // Resume containers auto-refresh when all viewers are closed
-      if (typeof window !== 'undefined') {
-        containersStore.startAutoRefresh(5000);
-      }
-    }
-  });
+// Effect to pause containers auto-refresh when any viewer is open
+$effect(() => {
+	if (logsViewerOpen || statsViewerOpen || shellAccessOpen) {
+		// Pause containers auto-refresh when any viewer is open
+		containersStore.stopAutoRefresh();
+	} else {
+		// Resume containers auto-refresh when all viewers are closed
+		if (typeof window !== "undefined") {
+			containersStore.startAutoRefresh(5000);
+		}
+	}
+});
 
-  // Cleanup on destroy
-  onDestroy(() => {
-    containersStore.stopAutoRefresh();
-  });
+// Cleanup on destroy
+onDestroy(() => {
+	containersStore.stopAutoRefresh();
+});
 </script>
 
 <svelte:head>

@@ -1,8 +1,7 @@
 use crate::docker::{
-    list_containers, inspect_container, start_container, stop_container,
-    restart_container, remove_container,
-    kill_container, get_container_stats, get_container_logs, exec_container, ContainerListItem, ContainerDetails,
-    ContainerStatsData, ContainerLogLine,
+    exec_container, get_container_logs, get_container_stats, inspect_container, kill_container,
+    list_containers, remove_container, restart_container, start_container, stop_container,
+    ContainerDetails, ContainerListItem, ContainerLogLine, ContainerStatsData,
 };
 use crate::utils::Result;
 

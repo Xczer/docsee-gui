@@ -1,4 +1,2 @@
 // TODO: System types
-export interface SystemInfo {
-  // System information types
-}
+export type SystemInfo = Record<string, unknown>;

@@ -1,5 +1,5 @@
 use crate::docker::{
-    list_images, inspect_image, remove_image, pull_image, ImageListItem, ImageDetails,
+    inspect_image, list_images, pull_image, remove_image, ImageDetails, ImageListItem,
 };
 use crate::utils::Result;
 

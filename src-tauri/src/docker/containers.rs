@@ -1,16 +1,16 @@
+use crate::docker::client::DOCKER_CLIENT;
+use crate::utils::{log_docker_operation, DockerError, Result};
+use bollard::container::Stats;
 use bollard::container::{
-    ListContainersOptions, InspectContainerOptions, StartContainerOptions,
-    StopContainerOptions, RestartContainerOptions, RemoveContainerOptions,
-    KillContainerOptions, StatsOptions, LogsOptions,
+    InspectContainerOptions, KillContainerOptions, ListContainersOptions, LogsOptions,
+    RemoveContainerOptions, RestartContainerOptions, StartContainerOptions, StatsOptions,
+    StopContainerOptions,
 };
 use bollard::exec::{CreateExecOptions, StartExecResults};
-use bollard::models::{ContainerSummary, ContainerInspectResponse};
-use bollard::container::Stats;
+use bollard::models::{ContainerInspectResponse, ContainerSummary};
 use futures_util::stream::TryStreamExt;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::docker::client::DOCKER_CLIENT;
-use crate::utils::{DockerError, Result, log_docker_operation};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContainerListItem {
@@ -155,10 +155,14 @@ pub async fn list_containers(all: bool) -> Result<Vec<ContainerListItem>> {
         Ok(containers) => {
             let result: Vec<ContainerListItem> = containers
                 .into_iter()
-                .map(|container| convert_container_summary(container))
+                .map(convert_container_summary)
                 .collect();
 
-            log_docker_operation("list_containers", true, Some(&format!("Found {} containers", result.len())));
+            log_docker_operation(
+                "list_containers",
+                true,
+                Some(&format!("Found {} containers", result.len())),
+            );
             Ok(result)
         }
         Err(e) => {
@@ -192,15 +196,25 @@ pub async fn exec_container(
             match client.start_exec(&exec_created.id, None).await {
                 Ok(StartExecResults::Attached { mut output, .. }) => {
                     let mut result = String::new();
-                    while let Some(chunk) = output.try_next().await.map_err(|e| DockerError::Connection(e))? {
+                    while let Some(chunk) =
+                        output.try_next().await.map_err(DockerError::Connection)?
+                    {
                         result.push_str(&String::from_utf8_lossy(&chunk.into_bytes()));
                     }
-                    
-                    log_docker_operation("exec_container", true, Some(&format!("Executed command in container {}", id)));
+
+                    log_docker_operation(
+                        "exec_container",
+                        true,
+                        Some(&format!("Executed command in container {}", id)),
+                    );
                     Ok(result)
                 }
                 Ok(StartExecResults::Detached) => {
-                    log_docker_operation("exec_container", true, Some(&format!("Executed detached command in container {}", id)));
+                    log_docker_operation(
+                        "exec_container",
+                        true,
+                        Some(&format!("Executed detached command in container {}", id)),
+                    );
                     Ok("Command executed in detached mode".to_string())
                 }
                 Err(e) => {
@@ -227,14 +241,16 @@ pub async fn exec_container(
 pub async fn inspect_container(id: &str) -> Result<ContainerDetails> {
     let client = DOCKER_CLIENT.get_client().await?;
 
-    let options = Some(InspectContainerOptions {
-        size: true,
-    });
+    let options = Some(InspectContainerOptions { size: true });
 
     match client.inspect_container(id, options).await {
         Ok(container) => {
             let result = convert_container_inspect(container);
-            log_docker_operation("inspect_container", true, Some(&format!("Inspected container {}", id)));
+            log_docker_operation(
+                "inspect_container",
+                true,
+                Some(&format!("Inspected container {}", id)),
+            );
             Ok(result)
         }
         Err(e) => {
@@ -251,9 +267,16 @@ pub async fn inspect_container(id: &str) -> Result<ContainerDetails> {
 pub async fn start_container(id: &str) -> Result<()> {
     let client = DOCKER_CLIENT.get_client().await?;
 
-    match client.start_container(id, None::<StartContainerOptions<String>>).await {
+    match client
+        .start_container(id, None::<StartContainerOptions<String>>)
+        .await
+    {
         Ok(_) => {
-            log_docker_operation("start_container", true, Some(&format!("Started container {}", id)));
+            log_docker_operation(
+                "start_container",
+                true,
+                Some(&format!("Started container {}", id)),
+            );
             Ok(())
         }
         Err(e) => {
@@ -271,12 +294,16 @@ pub async fn stop_container(id: &str, timeout: Option<i64>) -> Result<()> {
     let client = DOCKER_CLIENT.get_client().await?;
 
     let options = StopContainerOptions {
-        t: timeout.unwrap_or(10),  // Remove the `as isize` conversion
+        t: timeout.unwrap_or(10), // Remove the `as isize` conversion
     };
 
     match client.stop_container(id, Some(options)).await {
         Ok(_) => {
-            log_docker_operation("stop_container", true, Some(&format!("Stopped container {}", id)));
+            log_docker_operation(
+                "stop_container",
+                true,
+                Some(&format!("Stopped container {}", id)),
+            );
             Ok(())
         }
         Err(e) => {
@@ -294,12 +321,16 @@ pub async fn restart_container(id: &str, timeout: Option<i64>) -> Result<()> {
     let client = DOCKER_CLIENT.get_client().await?;
 
     let options = RestartContainerOptions {
-        t: timeout.unwrap_or(10) as isize,  // Remove the `as isize` conversion here too
+        t: timeout.unwrap_or(10) as isize, // Remove the `as isize` conversion here too
     };
 
     match client.restart_container(id, Some(options)).await {
         Ok(_) => {
-            log_docker_operation("restart_container", true, Some(&format!("Restarted container {}", id)));
+            log_docker_operation(
+                "restart_container",
+                true,
+                Some(&format!("Restarted container {}", id)),
+            );
             Ok(())
         }
         Err(e) => {
@@ -324,7 +355,11 @@ pub async fn remove_container(id: &str, force: bool, remove_volumes: bool) -> Re
 
     match client.remove_container(id, options).await {
         Ok(_) => {
-            log_docker_operation("remove_container", true, Some(&format!("Removed container {}", id)));
+            log_docker_operation(
+                "remove_container",
+                true,
+                Some(&format!("Removed container {}", id)),
+            );
             Ok(())
         }
         Err(e) => {
@@ -347,7 +382,11 @@ pub async fn kill_container(id: &str, signal: Option<&str>) -> Result<()> {
 
     match client.kill_container(id, options).await {
         Ok(_) => {
-            log_docker_operation("kill_container", true, Some(&format!("Killed container {}", id)));
+            log_docker_operation(
+                "kill_container",
+                true,
+                Some(&format!("Killed container {}", id)),
+            );
             Ok(())
         }
         Err(e) => {
@@ -373,7 +412,11 @@ pub async fn get_container_stats(id: &str) -> Result<ContainerStatsData> {
         Ok(mut stats) => {
             if let Some(stat) = stats.pop() {
                 let result = convert_container_stats(stat);
-                log_docker_operation("get_container_stats", true, Some(&format!("Retrieved stats for container {}", id)));
+                log_docker_operation(
+                    "get_container_stats",
+                    true,
+                    Some(&format!("Retrieved stats for container {}", id)),
+                );
                 Ok(result)
             } else {
                 Err(DockerError::OperationFailed {
@@ -392,6 +435,7 @@ pub async fn get_container_stats(id: &str) -> Result<ContainerStatsData> {
     }
 }
 
+#[allow(clippy::needless_update)]
 pub async fn get_container_logs(
     id: &str,
     follow: bool,
@@ -439,7 +483,15 @@ pub async fn get_container_logs(
                 });
             }
 
-            log_docker_operation("get_container_logs", true, Some(&format!("Retrieved {} log lines for container {}", result.len(), id)));
+            log_docker_operation(
+                "get_container_logs",
+                true,
+                Some(&format!(
+                    "Retrieved {} log lines for container {}",
+                    result.len(),
+                    id
+                )),
+            );
             Ok(result)
         }
         Err(e) => {
@@ -464,48 +516,65 @@ fn convert_container_summary(container: ContainerSummary) -> ContainerListItem {
         created: container.created.unwrap_or_default(),
         state: container.state.unwrap_or_default(),
         status: container.status.unwrap_or_default(),
-        ports: container.ports.unwrap_or_default().into_iter().map(|p| ContainerPort {
-            ip: p.ip,
-            private_port: p.private_port,
-            public_port: p.public_port,
-            r#type: p.typ.as_ref().map(|t| t.to_string()).unwrap_or_default(),
-        }).collect(),
+        ports: container
+            .ports
+            .unwrap_or_default()
+            .into_iter()
+            .map(|p| ContainerPort {
+                ip: p.ip,
+                private_port: p.private_port,
+                public_port: p.public_port,
+                r#type: p.typ.as_ref().map(|t| t.to_string()).unwrap_or_default(),
+            })
+            .collect(),
         labels: container.labels.unwrap_or_default(),
         size_rw: container.size_rw,
         size_root_fs: container.size_root_fs,
         host_config: ContainerHostConfig {
-            network_mode: container.host_config
+            network_mode: container
+                .host_config
                 .and_then(|hc| hc.network_mode)
                 .unwrap_or_default(),
         },
         network_settings: ContainerNetworkSettings {
-            networks: container.network_settings
+            networks: container
+                .network_settings
                 .and_then(|ns| ns.networks)
                 .unwrap_or_default()
                 .into_iter()
-                .map(|(k, v)| (k, ContainerNetwork {
-                    network_id: v.network_id.unwrap_or_default(),
-                    endpoint_id: v.endpoint_id.unwrap_or_default(),
-                    gateway: v.gateway.unwrap_or_default(),
-                    ip_address: v.ip_address.unwrap_or_default(),
-                    ip_prefix_len: v.ip_prefix_len.unwrap_or_default(),
-                    ipv6_gateway: v.ipv6_gateway.unwrap_or_default(),
-                    global_ipv6_address: v.global_ipv6_address.unwrap_or_default(),
-                    global_ipv6_prefix_len: v.global_ipv6_prefix_len.unwrap_or_default(),
-                    mac_address: v.mac_address.unwrap_or_default(),
-                }))
+                .map(|(k, v)| {
+                    (
+                        k,
+                        ContainerNetwork {
+                            network_id: v.network_id.unwrap_or_default(),
+                            endpoint_id: v.endpoint_id.unwrap_or_default(),
+                            gateway: v.gateway.unwrap_or_default(),
+                            ip_address: v.ip_address.unwrap_or_default(),
+                            ip_prefix_len: v.ip_prefix_len.unwrap_or_default(),
+                            ipv6_gateway: v.ipv6_gateway.unwrap_or_default(),
+                            global_ipv6_address: v.global_ipv6_address.unwrap_or_default(),
+                            global_ipv6_prefix_len: v.global_ipv6_prefix_len.unwrap_or_default(),
+                            mac_address: v.mac_address.unwrap_or_default(),
+                        },
+                    )
+                })
                 .collect(),
         },
-        mounts: container.mounts.unwrap_or_default().into_iter().map(|m| ContainerMount {
-            r#type: m.typ.as_ref().map(|t| t.to_string()).unwrap_or_default(),
-            name: m.name,
-            source: m.source.unwrap_or_default(),
-            destination: m.destination.unwrap_or_default(),
-            driver: m.driver,
-            mode: m.mode.unwrap_or_default(),
-            rw: m.rw.unwrap_or_default(),
-            propagation: m.propagation.unwrap_or_default(),
-        }).collect(),
+        mounts: container
+            .mounts
+            .unwrap_or_default()
+            .into_iter()
+            .map(|m| ContainerMount {
+                r#type: m.typ.as_ref().map(|t| t.to_string()).unwrap_or_default(),
+                name: m.name,
+                source: m.source.unwrap_or_default(),
+                destination: m.destination.unwrap_or_default(),
+                driver: m.driver,
+                mode: m.mode.unwrap_or_default(),
+                rw: m.rw.unwrap_or_default(),
+                propagation: m.propagation.unwrap_or_default(),
+            })
+            .collect(),
     }
 }
 
@@ -516,17 +585,62 @@ fn convert_container_inspect(container: ContainerInspectResponse) -> ContainerDe
         path: container.path.unwrap_or_default(),
         args: container.args.unwrap_or_default(),
         state: ContainerState {
-            status: container.state.as_ref().and_then(|s| s.status.as_ref()).map(|s| s.to_string()).unwrap_or_default(),
-            running: container.state.as_ref().and_then(|s| s.running).unwrap_or_default(),
-            paused: container.state.as_ref().and_then(|s| s.paused).unwrap_or_default(),
-            restarting: container.state.as_ref().and_then(|s| s.restarting).unwrap_or_default(),
-            oom_killed: container.state.as_ref().and_then(|s| s.oom_killed).unwrap_or_default(),
-            dead: container.state.as_ref().and_then(|s| s.dead).unwrap_or_default(),
-            pid: container.state.as_ref().and_then(|s| s.pid).unwrap_or_default(),
-            exit_code: container.state.as_ref().and_then(|s| s.exit_code).unwrap_or_default(),
-            error: container.state.as_ref().and_then(|s| s.error.clone()).unwrap_or_default(),
-            started_at: container.state.as_ref().and_then(|s| s.started_at.clone()).unwrap_or_default(),
-            finished_at: container.state.as_ref().and_then(|s| s.finished_at.clone()).unwrap_or_default(),
+            status: container
+                .state
+                .as_ref()
+                .and_then(|s| s.status.as_ref())
+                .map(|s| s.to_string())
+                .unwrap_or_default(),
+            running: container
+                .state
+                .as_ref()
+                .and_then(|s| s.running)
+                .unwrap_or_default(),
+            paused: container
+                .state
+                .as_ref()
+                .and_then(|s| s.paused)
+                .unwrap_or_default(),
+            restarting: container
+                .state
+                .as_ref()
+                .and_then(|s| s.restarting)
+                .unwrap_or_default(),
+            oom_killed: container
+                .state
+                .as_ref()
+                .and_then(|s| s.oom_killed)
+                .unwrap_or_default(),
+            dead: container
+                .state
+                .as_ref()
+                .and_then(|s| s.dead)
+                .unwrap_or_default(),
+            pid: container
+                .state
+                .as_ref()
+                .and_then(|s| s.pid)
+                .unwrap_or_default(),
+            exit_code: container
+                .state
+                .as_ref()
+                .and_then(|s| s.exit_code)
+                .unwrap_or_default(),
+            error: container
+                .state
+                .as_ref()
+                .and_then(|s| s.error.clone())
+                .unwrap_or_default(),
+            started_at: container
+                .state
+                .as_ref()
+                .and_then(|s| s.started_at.clone())
+                .unwrap_or_default(),
+            finished_at: container
+                .state
+                .as_ref()
+                .and_then(|s| s.finished_at.clone())
+                .unwrap_or_default(),
         },
         image: container.image.unwrap_or_default(),
         name: container.name.unwrap_or_default(),
@@ -539,21 +653,34 @@ fn convert_container_inspect(container: ContainerInspectResponse) -> ContainerDe
         exec_ids: container.exec_ids,
         host_config: serde_json::to_value(&container.host_config).unwrap_or_default(),
         graph_driver: GraphDriver {
-            name: container.graph_driver.as_ref().and_then(|gd| Some(gd.name.clone())).unwrap_or_default(),
-            data: container.graph_driver.as_ref().map(|gd| gd.data.clone()).unwrap_or_default(),
+            name: container
+                .graph_driver
+                .as_ref()
+                .map(|gd| gd.name.clone())
+                .unwrap_or_default(),
+            data: container
+                .graph_driver
+                .as_ref()
+                .map(|gd| gd.data.clone())
+                .unwrap_or_default(),
         },
         size_rw: container.size_rw,
         size_root_fs: container.size_root_fs,
-        mounts: container.mounts.unwrap_or_default().into_iter().map(|m| ContainerMount {
-            r#type: m.typ.as_ref().map(|t| t.to_string()).unwrap_or_default(),
-            name: m.name,
-            source: m.source.unwrap_or_default(),
-            destination: m.destination.unwrap_or_default(),
-            driver: m.driver,
-            mode: m.mode.unwrap_or_default(),
-            rw: m.rw.unwrap_or_default(),
-            propagation: m.propagation.unwrap_or_default(),
-        }).collect(),
+        mounts: container
+            .mounts
+            .unwrap_or_default()
+            .into_iter()
+            .map(|m| ContainerMount {
+                r#type: m.typ.as_ref().map(|t| t.to_string()).unwrap_or_default(),
+                name: m.name,
+                source: m.source.unwrap_or_default(),
+                destination: m.destination.unwrap_or_default(),
+                driver: m.driver,
+                mode: m.mode.unwrap_or_default(),
+                rw: m.rw.unwrap_or_default(),
+                propagation: m.propagation.unwrap_or_default(),
+            })
+            .collect(),
         config: serde_json::to_value(&container.config).unwrap_or_default(),
         network_settings: serde_json::to_value(&container.network_settings).unwrap_or_default(),
     }
@@ -565,15 +692,16 @@ fn convert_container_stats(stats: Stats) -> ContainerStatsData {
         name: stats.name,
         read: stats.read,
         preread: stats.preread,
-        pids_stats: Some(serde_json::to_value(&stats.pids_stats).unwrap_or_default()),
+        pids_stats: Some(serde_json::to_value(stats.pids_stats).unwrap_or_default()),
         blkio_stats: Some(serde_json::to_value(&stats.blkio_stats).unwrap_or_default()),
         num_procs: stats.num_procs,
-        storage_stats: Some(serde_json::to_value(&stats.storage_stats).unwrap_or_default()),
+        storage_stats: Some(serde_json::to_value(stats.storage_stats).unwrap_or_default()),
         cpu_stats: Some(serde_json::to_value(&stats.cpu_stats).unwrap_or_default()),
         precpu_stats: Some(serde_json::to_value(&stats.precpu_stats).unwrap_or_default()),
-        memory_stats: Some(serde_json::to_value(&stats.memory_stats).unwrap_or_default()),
+        memory_stats: Some(serde_json::to_value(stats.memory_stats).unwrap_or_default()),
         networks: stats.networks.map(|networks| {
-            networks.into_iter()
+            networks
+                .into_iter()
                 .map(|(k, v)| (k, serde_json::to_value(v).unwrap_or_default()))
                 .collect()
         }),

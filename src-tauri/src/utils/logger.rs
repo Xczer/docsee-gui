@@ -1,12 +1,12 @@
-use tracing::{info, error};
+use tracing::{error, info};
 use tracing_subscriber;
 
 pub fn init_logger() {
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)  // Changed from INFO to DEBUG for better debugging
+        .with_max_level(tracing::Level::DEBUG) // Changed from INFO to DEBUG for better debugging
         .with_target(false)
         .init();
-    
+
     info!("Logger initialized with DEBUG level");
 }
 
@@ -14,7 +14,10 @@ pub fn log_docker_connection(success: bool, error: Option<&str>) {
     if success {
         info!("Docker connection established successfully");
     } else {
-        error!("Docker connection failed: {}", error.unwrap_or("Unknown error"));
+        error!(
+            "Docker connection failed: {}",
+            error.unwrap_or("Unknown error")
+        );
     }
 }
 

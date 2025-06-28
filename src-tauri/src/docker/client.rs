@@ -1,8 +1,8 @@
+use crate::utils::{log_docker_connection, DockerError, Result};
 use bollard::Docker;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use crate::utils::{DockerError, Result, log_docker_connection};
-use tracing::{info, warn, error};
+use tracing::{error, info, warn};
 
 pub struct DockerClient {
     client: Arc<Mutex<Option<Docker>>>,
@@ -28,7 +28,10 @@ impl DockerClient {
                 // Test the connection by getting version
                 match docker.version().await {
                     Ok(version) => {
-                        info!("Docker connection successful! Version: {:?}", version.version);
+                        info!(
+                            "Docker connection successful! Version: {:?}",
+                            version.version
+                        );
                         *client_guard = Some(docker);
                         log_docker_connection(true, None);
                         Ok(true)
@@ -107,7 +110,10 @@ impl DockerClient {
                         return Ok(docker);
                     }
                     Err(e) => {
-                        warn!("Explicit socket connection failed for {}: {}", socket_path, e);
+                        warn!(
+                            "Explicit socket connection failed for {}: {}",
+                            socket_path, e
+                        );
                     }
                 }
             }
@@ -168,7 +174,10 @@ impl DockerClient {
                 info!("Testing Docker connection...");
                 match client.version().await {
                     Ok(version) => {
-                        info!("Docker connection test successful. Version: {:?}", version.version);
+                        info!(
+                            "Docker connection test successful. Version: {:?}",
+                            version.version
+                        );
                         Ok(true)
                     }
                     Err(e) => {

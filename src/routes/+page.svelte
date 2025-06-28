@@ -1,6 +1,6 @@
 <!-- src/routes/+page.svelte -->
 <script lang="ts">
-import { onMount, onDestroy } from "svelte";
+import * as Alert from "$lib/components/ui/alert";
 import { Badge } from "$lib/components/ui/badge";
 import { Button } from "$lib/components/ui/button";
 import {
@@ -13,27 +13,27 @@ import {
 import { Progress } from "$lib/components/ui/progress";
 import { Separator } from "$lib/components/ui/separator";
 import * as Table from "$lib/components/ui/table";
-import * as Alert from "$lib/components/ui/alert";
 import {
-	Play,
-	Square,
-	Trash2,
-	Container as ContainerIcon,
-	HardDrive,
 	Activity,
 	AlertCircle,
-	CheckCircle,
-	RefreshCw,
-	Database,
-	Network,
 	AlertTriangle,
+	CheckCircle,
+	Container as ContainerIcon,
+	Database,
+	HardDrive,
 	Info,
+	Network,
+	Play,
+	RefreshCw,
+	Square,
+	Trash2,
 } from "lucide-svelte";
+import { onDestroy, onMount } from "svelte";
 import { toast } from "svelte-sonner";
 
+import { containersStore } from "$lib/stores/containers.svelte";
 // Import stores
 import { dockerStore } from "$lib/stores/docker.svelte";
-import { containersStore } from "$lib/stores/containers.svelte";
 import type { Container } from "$lib/types/container";
 
 // Reactive state

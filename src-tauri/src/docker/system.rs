@@ -1,9 +1,9 @@
-use bollard::system::Version;
-use bollard::models::SystemInfo as BollardSystemInfo;
-use serde::{Serialize, Deserialize};
-use std::collections::HashMap;
 use crate::docker::client::DOCKER_CLIENT;
-use crate::utils::{DockerError, Result, log_docker_operation};
+use crate::utils::{log_docker_operation, DockerError, Result};
+use bollard::models::SystemInfo as BollardSystemInfo;
+use bollard::system::Version;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DockerVersion {
@@ -139,11 +139,15 @@ pub struct DockerStats {
 
 pub async fn get_docker_version() -> Result<DockerVersion> {
     let client = DOCKER_CLIENT.get_client().await?;
-    
+
     match client.version().await {
         Ok(version) => {
             let result = convert_version(version);
-            log_docker_operation("get_docker_version", true, Some(&format!("Docker version: {}", result.version)));
+            log_docker_operation(
+                "get_docker_version",
+                true,
+                Some(&format!("Docker version: {}", result.version)),
+            );
             Ok(result)
         }
         Err(e) => {
@@ -155,11 +159,18 @@ pub async fn get_docker_version() -> Result<DockerVersion> {
 
 pub async fn get_docker_info() -> Result<DockerInfo> {
     let client = DOCKER_CLIENT.get_client().await?;
-    
+
     match client.info().await {
         Ok(info) => {
             let result = convert_info(info);
-            log_docker_operation("get_docker_info", true, Some(&format!("Docker info retrieved for {} containers", result.containers)));
+            log_docker_operation(
+                "get_docker_info",
+                true,
+                Some(&format!(
+                    "Docker info retrieved for {} containers",
+                    result.containers
+                )),
+            );
             Ok(result)
         }
         Err(e) => {
@@ -172,7 +183,7 @@ pub async fn get_docker_info() -> Result<DockerInfo> {
 pub async fn get_docker_system_info() -> Result<DockerSystemInfo> {
     let version = get_docker_version().await?;
     let info = get_docker_info().await?;
-    
+
     Ok(DockerSystemInfo { version, info })
 }
 
@@ -212,7 +223,7 @@ pub async fn get_connection_status() -> DockerConnectionStatus {
 
 pub async fn get_docker_stats() -> Result<DockerStats> {
     let info = get_docker_info().await?;
-    
+
     // Calculate volumes and networks count (simplified for now)
     // In a real implementation, you'd call list_volumes and list_networks
     Ok(DockerStats {
@@ -221,7 +232,7 @@ pub async fn get_docker_stats() -> Result<DockerStats> {
         containers_stopped: info.containers_stopped,
         containers_paused: info.containers_paused,
         images_total: info.images,
-        volumes_total: 0, // TODO: Implement volumes count
+        volumes_total: 0,  // TODO: Implement volumes count
         networks_total: 0, // TODO: Implement networks count
     })
 }
@@ -251,10 +262,22 @@ fn convert_info(info: BollardSystemInfo) -> DockerInfo {
         driver_status: info.driver_status.unwrap_or_default(),
         system_status: None, // Field removed in newer API
         plugins: DockerPlugins {
-            volume: info.plugins.as_ref().and_then(|p| p.volume.clone()).unwrap_or_default(),
-            network: info.plugins.as_ref().and_then(|p| p.network.clone()).unwrap_or_default(),
+            volume: info
+                .plugins
+                .as_ref()
+                .and_then(|p| p.volume.clone())
+                .unwrap_or_default(),
+            network: info
+                .plugins
+                .as_ref()
+                .and_then(|p| p.network.clone())
+                .unwrap_or_default(),
             authorization: info.plugins.as_ref().and_then(|p| p.authorization.clone()),
-            log: info.plugins.as_ref().and_then(|p| p.log.clone()).unwrap_or_default(),
+            log: info
+                .plugins
+                .as_ref()
+                .and_then(|p| p.log.clone())
+                .unwrap_or_default(),
         },
         memory_limit: info.memory_limit.unwrap_or_default(),
         swap_limit: info.swap_limit.unwrap_or_default(),
@@ -273,7 +296,11 @@ fn convert_info(info: BollardSystemInfo) -> DockerInfo {
         ngoroutines: info.n_goroutines.unwrap_or_default(),
         system_time: info.system_time.unwrap_or_default(),
         logging_driver: info.logging_driver.unwrap_or_default(),
-        cgroup_driver: info.cgroup_driver.as_ref().map(|cd| cd.to_string()).unwrap_or_default(),
+        cgroup_driver: info
+            .cgroup_driver
+            .as_ref()
+            .map(|cd| cd.to_string())
+            .unwrap_or_default(),
         nevents_listener: info.n_events_listener.unwrap_or_default(),
         kernel_version: info.kernel_version.unwrap_or_default(),
         operating_system: info.operating_system.unwrap_or_default(),
@@ -289,23 +316,53 @@ fn convert_info(info: BollardSystemInfo) -> DockerInfo {
         labels: info.labels.unwrap_or_default(),
         experimental_build: info.experimental_build.unwrap_or_default(),
         server_version: info.server_version.unwrap_or_default(),
-        cluster_store: "".to_string(), // Field removed
+        cluster_store: "".to_string(),     // Field removed
         cluster_advertise: "".to_string(), // Field removed
-        runtimes: info.runtimes.unwrap_or_default()
+        runtimes: info
+            .runtimes
+            .unwrap_or_default()
             .into_iter()
-            .map(|(k, v)| (k, DockerRuntime {
-                path: v.path.unwrap_or_default(),
-                runtime_args: v.runtime_args,
-            }))
+            .map(|(k, v)| {
+                (
+                    k,
+                    DockerRuntime {
+                        path: v.path.unwrap_or_default(),
+                        runtime_args: v.runtime_args,
+                    },
+                )
+            })
             .collect(),
         default_runtime: info.default_runtime.unwrap_or_default(),
         swarm: DockerSwarm {
-            node_id: info.swarm.as_ref().and_then(|s| s.node_id.clone()).unwrap_or_default(),
-            node_addr: info.swarm.as_ref().and_then(|s| s.node_addr.clone()).unwrap_or_default(),
-            local_node_state: info.swarm.as_ref().and_then(|s| s.local_node_state.as_ref()).map(|s| s.to_string()).unwrap_or_default(),
-            control_available: info.swarm.as_ref().and_then(|s| s.control_available).unwrap_or_default(),
-            error: info.swarm.as_ref().and_then(|s| s.error.clone()).unwrap_or_default(),
-            remote_managers: info.swarm.as_ref()
+            node_id: info
+                .swarm
+                .as_ref()
+                .and_then(|s| s.node_id.clone())
+                .unwrap_or_default(),
+            node_addr: info
+                .swarm
+                .as_ref()
+                .and_then(|s| s.node_addr.clone())
+                .unwrap_or_default(),
+            local_node_state: info
+                .swarm
+                .as_ref()
+                .and_then(|s| s.local_node_state.as_ref())
+                .map(|s| s.to_string())
+                .unwrap_or_default(),
+            control_available: info
+                .swarm
+                .as_ref()
+                .and_then(|s| s.control_available)
+                .unwrap_or_default(),
+            error: info
+                .swarm
+                .as_ref()
+                .and_then(|s| s.error.clone())
+                .unwrap_or_default(),
+            remote_managers: info
+                .swarm
+                .as_ref()
                 .and_then(|s| s.remote_managers.as_ref())
                 .unwrap_or(&vec![])
                 .iter()
@@ -316,19 +373,47 @@ fn convert_info(info: BollardSystemInfo) -> DockerInfo {
                 .collect(),
         },
         live_restore_enabled: info.live_restore_enabled.unwrap_or_default(),
-        isolation: info.isolation.as_ref().map(|i| i.to_string()).unwrap_or_default(),
+        isolation: info
+            .isolation
+            .as_ref()
+            .map(|i| i.to_string())
+            .unwrap_or_default(),
         init_binary: info.init_binary.unwrap_or_default(),
         containerd_commit: DockerCommit {
-            id: info.containerd_commit.as_ref().and_then(|c| c.id.clone()).unwrap_or_default(),
-            expected: info.containerd_commit.as_ref().and_then(|c| c.expected.clone()).unwrap_or_default(),
+            id: info
+                .containerd_commit
+                .as_ref()
+                .and_then(|c| c.id.clone())
+                .unwrap_or_default(),
+            expected: info
+                .containerd_commit
+                .as_ref()
+                .and_then(|c| c.expected.clone())
+                .unwrap_or_default(),
         },
         runc_commit: DockerCommit {
-            id: info.runc_commit.as_ref().and_then(|c| c.id.clone()).unwrap_or_default(),
-            expected: info.runc_commit.as_ref().and_then(|c| c.expected.clone()).unwrap_or_default(),
+            id: info
+                .runc_commit
+                .as_ref()
+                .and_then(|c| c.id.clone())
+                .unwrap_or_default(),
+            expected: info
+                .runc_commit
+                .as_ref()
+                .and_then(|c| c.expected.clone())
+                .unwrap_or_default(),
         },
         init_commit: DockerCommit {
-            id: info.init_commit.as_ref().and_then(|c| c.id.clone()).unwrap_or_default(),
-            expected: info.init_commit.as_ref().and_then(|c| c.expected.clone()).unwrap_or_default(),
+            id: info
+                .init_commit
+                .as_ref()
+                .and_then(|c| c.id.clone())
+                .unwrap_or_default(),
+            expected: info
+                .init_commit
+                .as_ref()
+                .and_then(|c| c.expected.clone())
+                .unwrap_or_default(),
         },
         security_options: info.security_options.unwrap_or_default(),
     }

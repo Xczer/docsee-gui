@@ -1,10 +1,10 @@
-use bollard::image::{ListImagesOptions, RemoveImageOptions, CreateImageOptions};
-use bollard::models::{ImageSummary as BollardImageSummary, ImageInspect as BollardImageInspect};
-use futures_util::stream::TryStreamExt;
-use serde::{Serialize, Deserialize};
-use std::collections::HashMap;
 use crate::docker::client::DOCKER_CLIENT;
-use crate::utils::{DockerError, Result, log_docker_operation};
+use crate::utils::{log_docker_operation, DockerError, Result};
+use bollard::image::{CreateImageOptions, ListImagesOptions, RemoveImageOptions};
+use bollard::models::{ImageInspect as BollardImageInspect, ImageSummary as BollardImageSummary};
+use futures_util::stream::TryStreamExt;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImageListItem {
@@ -61,7 +61,7 @@ pub struct ImageMetadata {
 
 pub async fn list_images(all: bool) -> Result<Vec<ImageListItem>> {
     let client = DOCKER_CLIENT.get_client().await?;
-    
+
     let options = Some(ListImagesOptions::<String> {
         all,
         ..Default::default()
@@ -69,12 +69,14 @@ pub async fn list_images(all: bool) -> Result<Vec<ImageListItem>> {
 
     match client.list_images(options).await {
         Ok(images) => {
-            let result: Vec<ImageListItem> = images
-                .into_iter()
-                .map(|image| convert_image_summary(image))
-                .collect();
-            
-            log_docker_operation("list_images", true, Some(&format!("Found {} images", result.len())));
+            let result: Vec<ImageListItem> =
+                images.into_iter().map(convert_image_summary).collect();
+
+            log_docker_operation(
+                "list_images",
+                true,
+                Some(&format!("Found {} images", result.len())),
+            );
             Ok(result)
         }
         Err(e) => {
@@ -90,7 +92,11 @@ pub async fn inspect_image(id: &str) -> Result<ImageDetails> {
     match client.inspect_image(id).await {
         Ok(image) => {
             let result = convert_image_inspect(image);
-            log_docker_operation("inspect_image", true, Some(&format!("Inspected image {}", id)));
+            log_docker_operation(
+                "inspect_image",
+                true,
+                Some(&format!("Inspected image {}", id)),
+            );
             Ok(result)
         }
         Err(e) => {
@@ -106,7 +112,7 @@ pub async fn inspect_image(id: &str) -> Result<ImageDetails> {
 
 pub async fn remove_image(id: &str, force: bool, no_prune: bool) -> Result<()> {
     let client = DOCKER_CLIENT.get_client().await?;
-    
+
     let options = Some(RemoveImageOptions {
         force,
         noprune: no_prune,
@@ -130,21 +136,29 @@ pub async fn remove_image(id: &str, force: bool, no_prune: bool) -> Result<()> {
 
 pub async fn pull_image(name: &str, tag: Option<&str>) -> Result<()> {
     let client = DOCKER_CLIENT.get_client().await?;
-    
+
     let image_name = if let Some(tag) = tag {
         format!("{}:{}", name, tag)
     } else {
         name.to_string()
     };
-    
+
     let options = Some(CreateImageOptions {
         from_image: image_name.clone(),
         ..Default::default()
     });
 
-    match client.create_image(options, None, None).try_collect::<Vec<_>>().await {
+    match client
+        .create_image(options, None, None)
+        .try_collect::<Vec<_>>()
+        .await
+    {
         Ok(_) => {
-            log_docker_operation("pull_image", true, Some(&format!("Pulled image {}", image_name)));
+            log_docker_operation(
+                "pull_image",
+                true,
+                Some(&format!("Pulled image {}", image_name)),
+            );
             Ok(())
         }
         Err(e) => {
@@ -187,15 +201,33 @@ fn convert_image_inspect(image: BollardImageInspect) -> ImageDetails {
         size: image.size.unwrap_or_default(),
         virtual_size: image.virtual_size.unwrap_or_default(),
         graph_driver: GraphDriver {
-            name: image.graph_driver.as_ref().and_then(|gd| Some(gd.name.clone())).unwrap_or_default(),
-            data: image.graph_driver.as_ref().map(|gd| gd.data.clone()).unwrap_or_default(),
+            name: image
+                .graph_driver
+                .as_ref()
+                .map(|gd| gd.name.clone())
+                .unwrap_or_default(),
+            data: image
+                .graph_driver
+                .as_ref()
+                .map(|gd| gd.data.clone())
+                .unwrap_or_default(),
         },
         root_fs: RootFs {
-            r#type: image.root_fs.as_ref().map(|rf| rf.typ.clone()).unwrap_or_default(),
-            layers: image.root_fs.as_ref().and_then(|rf| rf.layers.clone()).unwrap_or_default(),
+            r#type: image
+                .root_fs
+                .as_ref()
+                .map(|rf| rf.typ.clone())
+                .unwrap_or_default(),
+            layers: image
+                .root_fs
+                .as_ref()
+                .and_then(|rf| rf.layers.clone())
+                .unwrap_or_default(),
         },
         metadata: ImageMetadata {
-            last_tag_time: image.metadata.as_ref()
+            last_tag_time: image
+                .metadata
+                .as_ref()
                 .and_then(|m| m.last_tag_time.clone())
                 .unwrap_or_default(),
         },

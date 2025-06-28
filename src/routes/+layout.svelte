@@ -1,12 +1,12 @@
 <!-- src/routes/+layout.svelte -->
 <script>
 import "../app.css";
-import { ModeWatcher } from "mode-watcher";
-import { Button } from "$lib/components/ui/button";
-import { SunIcon, MoonIcon, Container } from "lucide-svelte";
-import { toggleMode, mode } from "mode-watcher";
-import { Toaster } from "svelte-sonner";
 import { page } from "$app/stores";
+import { Button } from "$lib/components/ui/button";
+import { Container, MoonIcon, SunIcon } from "lucide-svelte";
+import { ModeWatcher } from "mode-watcher";
+import { mode, toggleMode } from "mode-watcher";
+import { Toaster } from "svelte-sonner";
 
 const currentMode = $derived(mode.current);
 

@@ -1,9 +1,9 @@
 use crate::docker::{
-    get_connection_status, get_docker_system_info, get_docker_stats, DOCKER_CLIENT,
-    DockerConnectionStatus, DockerSystemInfo, DockerStats,
+    get_connection_status, get_docker_stats, get_docker_system_info, DockerConnectionStatus,
+    DockerStats, DockerSystemInfo, DOCKER_CLIENT,
 };
 use crate::utils::Result;
-use tracing::{info, warn, error};
+use tracing::{error, info, warn};
 
 #[tauri::command]
 pub async fn connect_docker() -> Result<bool> {
@@ -28,7 +28,10 @@ pub async fn disconnect_docker() -> Result<()> {
 pub async fn get_docker_connection_status() -> DockerConnectionStatus {
     info!("Frontend requested connection status...");
     let status = get_connection_status().await;
-    info!("Connection status: connected={}, error={:?}", status.connected, status.error);
+    info!(
+        "Connection status: connected={}, error={:?}",
+        status.connected, status.error
+    );
     status
 }
 

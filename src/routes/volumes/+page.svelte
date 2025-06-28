@@ -1,41 +1,41 @@
 <!-- src/routes/volumes/+page.svelte -->
 <script lang="ts">
-import { onMount, onDestroy } from "svelte";
 import {
-	HardDrive,
-	Search,
+	AlertCircle,
+	Archive,
+	CheckCircle2,
+	Clock,
+	Copy,
+	Database,
+	Download,
 	Filter,
+	FolderOpen,
+	HardDrive,
 	MoreHorizontal,
 	Plus,
 	RefreshCw,
-	AlertCircle,
-	CheckCircle2,
-	Clock,
-	Trash2,
-	FolderOpen,
-	Database,
+	Search,
 	Server,
-	Archive,
-	Download,
 	Settings,
-	Copy,
+	Trash2,
 } from "lucide-svelte";
+import { onDestroy, onMount } from "svelte";
 
+import * as Alert from "$lib/components/ui/alert";
+import { Badge } from "$lib/components/ui/badge";
 // Import shadcn-svelte components
 import { Button } from "$lib/components/ui/button";
-import { Badge } from "$lib/components/ui/badge";
 import * as Card from "$lib/components/ui/card";
-import * as Table from "$lib/components/ui/table";
+import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 import { Input } from "$lib/components/ui/input";
 import * as Select from "$lib/components/ui/select";
-import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
-import { Skeleton } from "$lib/components/ui/skeleton";
 import { Separator } from "$lib/components/ui/separator";
-import * as Alert from "$lib/components/ui/alert";
+import { Skeleton } from "$lib/components/ui/skeleton";
+import * as Table from "$lib/components/ui/table";
 
+import { dockerStore } from "$lib/stores/docker.svelte";
 // Import stores and types
 import { volumesStore } from "$lib/stores/volumes.svelte";
-import { dockerStore } from "$lib/stores/docker.svelte";
 import type { Volume } from "$lib/types/volume";
 import { toast } from "svelte-sonner";
 

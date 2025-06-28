@@ -1,244 +1,243 @@
 <!-- src/routes/settings/+page.svelte -->
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
-  import {
-    Settings,
-    Save,
-    RotateCcw,
-    Download,
-    Upload,
-    TestTube,
-    Info,
-    Shield,
-    Server,
-    Palette,
-    HardDrive,
-    RefreshCw,
-    AlertCircle,
-    CheckCircle2,
-    ChevronDown,
-    ChevronRight,
-    Monitor,
-    Sun,
-    Moon,
-    Globe,
-    Clock,
-    Database,
-    Lock,
-    Eye,
-    EyeOff,
-    ExternalLink,
-  } from "lucide-svelte";
+import {
+	AlertCircle,
+	CheckCircle2,
+	ChevronDown,
+	ChevronRight,
+	Clock,
+	Database,
+	Download,
+	ExternalLink,
+	Eye,
+	EyeOff,
+	Globe,
+	HardDrive,
+	Info,
+	Lock,
+	Monitor,
+	Moon,
+	Palette,
+	RefreshCw,
+	RotateCcw,
+	Save,
+	Server,
+	Settings,
+	Shield,
+	Sun,
+	TestTube,
+	Upload,
+} from "lucide-svelte";
+import { onDestroy, onMount } from "svelte";
 
-  // Import shadcn-svelte components
-  import { Button } from "$lib/components/ui/button";
-  import { Badge } from "$lib/components/ui/badge";
-  import * as Card from "$lib/components/ui/card";
-  import { Input } from "$lib/components/ui/input";
-  import { Label } from "$lib/components/ui/label";
-  import { Textarea } from "$lib/components/ui/textarea";
-  import * as Select from "$lib/components/ui/select";
-  import { Switch } from "$lib/components/ui/switch";
-  import { Slider } from "$lib/components/ui/slider";
-  import { Separator } from "$lib/components/ui/separator";
-  import * as Alert from "$lib/components/ui/alert";
-  import * as Collapsible from "$lib/components/ui/collapsible";
-  import * as Tabs from "$lib/components/ui/tabs";
-  import { Skeleton } from "$lib/components/ui/skeleton";
-  import * as Dialog from "$lib/components/ui/dialog";
+import * as Alert from "$lib/components/ui/alert";
+import { Badge } from "$lib/components/ui/badge";
+// Import shadcn-svelte components
+import { Button } from "$lib/components/ui/button";
+import * as Card from "$lib/components/ui/card";
+import * as Collapsible from "$lib/components/ui/collapsible";
+import * as Dialog from "$lib/components/ui/dialog";
+import { Input } from "$lib/components/ui/input";
+import { Label } from "$lib/components/ui/label";
+import * as Select from "$lib/components/ui/select";
+import { Separator } from "$lib/components/ui/separator";
+import { Skeleton } from "$lib/components/ui/skeleton";
+import { Slider } from "$lib/components/ui/slider";
+import { Switch } from "$lib/components/ui/switch";
+import * as Tabs from "$lib/components/ui/tabs";
+import { Textarea } from "$lib/components/ui/textarea";
 
-  // Import stores and services
-  import { settingsStore } from "$lib/stores/settings.svelte";
-  import { dockerStore } from "$lib/stores/docker.svelte";
-  import { testDockerConnection } from "$lib/services/tauri-commands";
-  import { toast } from "svelte-sonner";
+import { testDockerConnection } from "$lib/services/tauri-commands";
+import { dockerStore } from "$lib/stores/docker.svelte";
+// Import stores and services
+import { settingsStore } from "$lib/stores/settings.svelte";
+import { toast } from "svelte-sonner";
 
-  // Reactive state
-  let isTestingConnection = $state(false);
-  let showImportDialog = $state(false);
-  let showExportDialog = $state(false);
-  let importText = $state("");
-  let exportText = $state("");
-  // biome-ignore lint/style/useConst: <explanation>
-  let showAdvancedDocker = $state(false);
-  // biome-ignore lint/style/useConst: <explanation>
-  let showAdvancedSecurity = $state(false);
+// Reactive state
+let isTestingConnection = $state(false);
+let showImportDialog = $state(false);
+let showExportDialog = $state(false);
+let importText = $state("");
+let exportText = $state("");
+// biome-ignore lint/style/useConst: <explanation>
+let showAdvancedDocker = $state(false);
+// biome-ignore lint/style/useConst: <explanation>
+let showAdvancedSecurity = $state(false);
 
-  // Store getters
-  const settings = $derived(settingsStore.settings);
-  const isLoading = $derived(settingsStore.isLoading);
-  const isSaving = $derived(settingsStore.isSaving);
-  const hasUnsavedChanges = $derived(settingsStore.hasUnsavedChanges);
-  const error = $derived(settingsStore.error);
-  const lastSaved = $derived(settingsStore.lastSaved);
-  const dockerSettings = $derived(settingsStore.dockerSettings);
-  const appSettings = $derived(settingsStore.applicationSettings);
-  const resourceSettings = $derived(settingsStore.resourceSettings);
-  const securitySettings = $derived(settingsStore.securitySettings);
-  const connectionStatus = $derived(dockerStore.connectionStatus);
+// Store getters
+const settings = $derived(settingsStore.settings);
+const isLoading = $derived(settingsStore.isLoading);
+const isSaving = $derived(settingsStore.isSaving);
+const hasUnsavedChanges = $derived(settingsStore.hasUnsavedChanges);
+const error = $derived(settingsStore.error);
+const lastSaved = $derived(settingsStore.lastSaved);
+const dockerSettings = $derived(settingsStore.dockerSettings);
+const appSettings = $derived(settingsStore.applicationSettings);
+const resourceSettings = $derived(settingsStore.resourceSettings);
+const securitySettings = $derived(settingsStore.securitySettings);
+const connectionStatus = $derived(dockerStore.connectionStatus);
 
-  // Theme options
-  const themeOptions = [
-    { value: "auto", label: "Auto", icon: Monitor },
-    { value: "light", label: "Light", icon: Sun },
-    { value: "dark", label: "Dark", icon: Moon },
-  ];
+// Theme options
+const themeOptions = [
+	{ value: "auto", label: "Auto", icon: Monitor },
+	{ value: "light", label: "Light", icon: Sun },
+	{ value: "dark", label: "Dark", icon: Moon },
+];
 
-  // Language options (future-ready)
-  const languageOptions = [
-    { value: "en", label: "English" },
-    { value: "es", label: "Español" },
-    { value: "fr", label: "Français" },
-    { value: "de", label: "Deutsch" },
-  ];
+// Language options (future-ready)
+const languageOptions = [
+	{ value: "en", label: "English" },
+	{ value: "es", label: "Español" },
+	{ value: "fr", label: "Français" },
+	{ value: "de", label: "Deutsch" },
+];
 
-  // Image pull policy options
-  const pullPolicyOptions = [
-    {
-      value: "always",
-      label: "Always pull latest",
-      description: "Always pull the latest version",
-    },
-    {
-      value: "missing",
-      label: "Pull if missing",
-      description: "Only pull if image doesn't exist locally",
-    },
-    {
-      value: "never",
-      label: "Never pull",
-      description: "Never automatically pull images",
-    },
-  ];
+// Image pull policy options
+const pullPolicyOptions = [
+	{
+		value: "always",
+		label: "Always pull latest",
+		description: "Always pull the latest version",
+	},
+	{
+		value: "missing",
+		label: "Pull if missing",
+		description: "Only pull if image doesn't exist locally",
+	},
+	{
+		value: "never",
+		label: "Never pull",
+		description: "Never automatically pull images",
+	},
+];
 
-  // Handle save settings
-  async function handleSave() {
-    const success = await settingsStore.saveSettings();
-    if (success) {
-      // Apply theme change if needed
-      if (appSettings.theme !== "auto") {
-        // Theme integration would happen here with mode-watcher
-        document.documentElement.classList.toggle(
-          "dark",
-          appSettings.theme === "dark",
-        );
-      }
-    }
-  }
+// Handle save settings
+async function handleSave() {
+	const success = await settingsStore.saveSettings();
+	if (success) {
+		// Apply theme change if needed
+		if (appSettings.theme !== "auto") {
+			// Theme integration would happen here with mode-watcher
+			document.documentElement.classList.toggle(
+				"dark",
+				appSettings.theme === "dark",
+			);
+		}
+	}
+}
 
-  // Handle reset to defaults
-  function handleReset() {
-    if (
-      confirm(
-        "Are you sure you want to reset all settings to defaults? This cannot be undone.",
-      )
-    ) {
-      settingsStore.resetToDefaults();
-      toast.success("Settings reset to defaults");
-    }
-  }
+// Handle reset to defaults
+function handleReset() {
+	if (
+		confirm(
+			"Are you sure you want to reset all settings to defaults? This cannot be undone.",
+		)
+	) {
+		settingsStore.resetToDefaults();
+		toast.success("Settings reset to defaults");
+	}
+}
 
-  // Handle Docker connection test
-  async function handleTestConnection() {
-    try {
-      isTestingConnection = true;
-      const isConnected = await testDockerConnection();
+// Handle Docker connection test
+async function handleTestConnection() {
+	try {
+		isTestingConnection = true;
+		const isConnected = await testDockerConnection();
 
-      if (isConnected) {
-        toast.success("Docker connection successful!");
-      } else {
-        toast.error("Failed to connect to Docker");
-      }
-    } catch (error) {
-      console.error("Connection test failed:", error);
-      toast.error("Connection test failed");
-    } finally {
-      isTestingConnection = false;
-    }
-  }
+		if (isConnected) {
+			toast.success("Docker connection successful!");
+		} else {
+			toast.error("Failed to connect to Docker");
+		}
+	} catch (error) {
+		console.error("Connection test failed:", error);
+		toast.error("Connection test failed");
+	} finally {
+		isTestingConnection = false;
+	}
+}
 
-  // Handle export settings
-  function handleExport() {
-    exportText = settingsStore.exportSettings();
-    showExportDialog = true;
-  }
+// Handle export settings
+function handleExport() {
+	exportText = settingsStore.exportSettings();
+	showExportDialog = true;
+}
 
-  // Handle import settings
-  async function handleImport() {
-    if (importText.trim()) {
-      const success = await settingsStore.importSettings(importText);
-      if (success) {
-        showImportDialog = false;
-        importText = "";
-      }
-    }
-  }
+// Handle import settings
+async function handleImport() {
+	if (importText.trim()) {
+		const success = await settingsStore.importSettings(importText);
+		if (success) {
+			showImportDialog = false;
+			importText = "";
+		}
+	}
+}
 
-  // Copy export text to clipboard
-  async function copyExportText() {
-    try {
-      await navigator.clipboard.writeText(exportText);
-      toast.success("Settings copied to clipboard");
-    } catch (error) {
-      toast.error("Failed to copy to clipboard");
-    }
-  }
+// Copy export text to clipboard
+async function copyExportText() {
+	try {
+		await navigator.clipboard.writeText(exportText);
+		toast.success("Settings copied to clipboard");
+	} catch (error) {
+		toast.error("Failed to copy to clipboard");
+	}
+}
 
-  // Download export as file
-  function downloadExportFile() {
-    const blob = new Blob([exportText], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `docsee-settings-${new Date().toISOString().split("T")[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
+// Download export as file
+function downloadExportFile() {
+	const blob = new Blob([exportText], { type: "application/json" });
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement("a");
+	a.href = url;
+	a.download = `docsee-settings-${new Date().toISOString().split("T")[0]}.json`;
+	document.body.appendChild(a);
+	a.click();
+	document.body.removeChild(a);
+	URL.revokeObjectURL(url);
+}
 
-  // Format time since last saved
-  function formatLastSaved(timestamp: number | null) {
-    if (!timestamp) return "Never";
+// Format time since last saved
+function formatLastSaved(timestamp: number | null) {
+	if (!timestamp) return "Never";
 
-    const now = Date.now();
-    const diff = now - timestamp;
+	const now = Date.now();
+	const diff = now - timestamp;
 
-    if (diff < 60000) return "Just now";
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-    return new Date(timestamp).toLocaleDateString();
-  }
+	if (diff < 60000) return "Just now";
+	if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+	if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+	return new Date(timestamp).toLocaleDateString();
+}
 
-  // Format bytes
-  function formatBytes(bytes: number) {
-    if (bytes === 0) return "0 B";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${Number.parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`;
-  }
+// Format bytes
+function formatBytes(bytes: number) {
+	if (bytes === 0) return "0 B";
+	const k = 1024;
+	const sizes = ["B", "KB", "MB", "GB"];
+	const i = Math.floor(Math.log(bytes) / Math.log(k));
+	return `${Number.parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`;
+}
 
-  // Validation functions
-  const dockerHostError = $derived(() => {
-    if (dockerSettings.host) {
-      return settingsStore.validateDockerHost(dockerSettings.host);
-    }
-    return null;
-  });
+// Validation functions
+const dockerHostError = $derived(() => {
+	if (dockerSettings.host) {
+		return settingsStore.validateDockerHost(dockerSettings.host);
+	}
+	return null;
+});
 
-  const timeoutError = $derived(() => {
-    return settingsStore.validateTimeout(dockerSettings.connectionTimeout);
-  });
+const timeoutError = $derived(() => {
+	return settingsStore.validateTimeout(dockerSettings.connectionTimeout);
+});
 
-  onMount(() => {
-    // Settings are automatically loaded in the store constructor
-  });
+onMount(() => {
+	// Settings are automatically loaded in the store constructor
+});
 
-  onDestroy(() => {
-    // Cleanup is handled in the store
-  });
-
+onDestroy(() => {
+	// Cleanup is handled in the store
+});
 </script>
 
 <svelte:head>

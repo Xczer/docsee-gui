@@ -1,11 +1,11 @@
-// src/lib/stores/volumes.svelte.ts
-import type {
-	Volume,
-	VolumeInspect,
-	CreateVolumeOptions,
-} from "../types/volume";
 import { invoke } from "@tauri-apps/api/core";
 import { handleTauriError } from "../services/tauri-commands";
+// src/lib/stores/volumes.svelte.ts
+import type {
+	CreateVolumeOptions,
+	Volume,
+	VolumeInspect,
+} from "../types/volume";
 
 // Volume API functions
 async function getVolumes(): Promise<Volume[]> {
