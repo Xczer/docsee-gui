@@ -830,7 +830,7 @@ dependencies = [
 
 [[package]]
 name = "docsee-gui"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "bollard",
  "chrono",
