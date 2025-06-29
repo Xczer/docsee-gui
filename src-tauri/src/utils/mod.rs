@@ -32,11 +32,11 @@ pub fn format_duration(seconds: i64) -> String {
     } else if seconds < 86400 {
         let hours = seconds / 3600;
         let minutes = (seconds % 3600) / 60;
-        format!("{hours}h {minutes}m", hours, minutes)
+        format!("{hours}h {minutes}m")
     } else {
         let days = seconds / 86400;
         let hours = (seconds % 86400) / 3600;
-        format!("{days}d {hours}h", days, hours)
+        format!("{days}d {hours}h")
     }
 }
 

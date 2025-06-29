@@ -183,7 +183,10 @@ export function calculateNetworkIO(stats: any): { rx: number; tx: number } {
 	let totalRx = 0;
 	let totalTx = 0;
 
-	for (const network of Object.values(stats.networks)) {
+	for (const network of Object.values(stats.networks) as Array<{
+		rx_bytes?: number;
+		tx_bytes?: number;
+	}>) {
 		totalRx += network.rx_bytes || 0;
 		totalTx += network.tx_bytes || 0;
 	}
