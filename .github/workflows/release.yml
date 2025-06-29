@@ -111,10 +111,11 @@ jobs:
             os: ubuntu-22.04
             name: docsee-gui-linux-x86_64
             bundles: "appimage,deb,rpm"
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-22.04
-            name: docsee-gui-linux-aarch64
-            bundles: "appimage,deb,rpm"
+          # Temporarily disable ARM64 until cross-compilation is fixed
+          # - target: aarch64-unknown-linux-gnu
+          #   os: ubuntu-22.04
+          #   name: docsee-gui-linux-aarch64
+          #   bundles: "appimage,deb,rpm"
           - target: x86_64-apple-darwin
             os: macos-latest
             name: docsee-gui-macos-x86_64
@@ -174,21 +175,6 @@ jobs:
             patchelf \
             rpm
 
-      # Linux ARM64 cross-compilation setup (following your proven approach)
-      - name: Setup Linux ARM64 cross-compilation
-        if: matrix.target == 'aarch64-unknown-linux-gnu'
-        run: |
-          # Install cross for robust cross-compilation (like your working setup)
-          cargo install cross --git https://github.com/cross-rs/cross
-
-          # Install traditional tools as backup
-          sudo apt-get install -y gcc-aarch64-linux-gnu
-
-          # Configure linker
-          mkdir -p ~/.cargo
-          echo '[target.aarch64-unknown-linux-gnu]' >> ~/.cargo/config.toml
-          echo 'linker = "aarch64-linux-gnu-gcc"' >> ~/.cargo/config.toml
-
       # Update version in configuration files
       - name: Update version
         shell: bash
@@ -218,16 +204,10 @@ jobs:
         shell: bash
         run: |
           echo "📦 Building Tauri app for ${{ matrix.target }}..."
-
-          if [ "${{ matrix.target }}" = "aarch64-unknown-linux-gnu" ]; then
-            # Use the working cross-compilation approach from your TUI project
-            echo "🔧 Using cross-compilation for ARM64..."
-            bun tauri build --bundles ${{ matrix.bundles }} --target ${{ matrix.target }}
-          else
-            # Standard build for other targets
-            bun tauri build --bundles ${{ matrix.bundles }} --target ${{ matrix.target }}
-          fi
-
+          
+          # Standard build for all targets (ARM64 temporarily disabled)
+          bun tauri build --bundles ${{ matrix.bundles }} --target ${{ matrix.target }}
+          
           echo "✅ Build completed for ${{ matrix.target }}"
 
       - name: Collect and prepare artifacts
@@ -309,7 +289,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📦 Multi-Platform Builds" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Linux x64 (AppImage, DEB, RPM)" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Linux ARM64 (AppImage, DEB, RPM)" >> $GITHUB_STEP_SUMMARY
+          echo "- ⏸️ Linux ARM64 (temporarily disabled)" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ macOS Intel (DMG)" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ macOS Apple Silicon (DMG)" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Windows x64 (MSI, NSIS)" >> $GITHUB_STEP_SUMMARY
