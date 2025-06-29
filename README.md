@@ -1,164 +1,60 @@
-# DocSee - Docker Management Application
+# DocSee GUI - Modern Docker Management
 
-A modern, lightweight Docker management application built with Tauri v2 and SvelteKit for fast, native performance.
+A fast, intuitive Docker management application built with Tauri v2 and SvelteKit for native desktop performance.
 
-## 🚀 Current Implementation Status
+![DocSee GUI](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Status](https://img.shields.io/badge/Status-Release%20Candidate-orange)
 
-### ✅ **Core Foundation** (COMPLETED)
-- ✅ Docker daemon connection and auto-discovery
-- ✅ Modern UI with SvelteKit + Svelte 5 + TailwindCSS v4 + shadcn-svelte
-- ✅ Real-time connection monitoring
-- ✅ Type-safe Rust backend with Bollard
-- ✅ Cross-platform support (Windows, macOS, Linux)
+## ✨ Features
 
-### ✅ **Dashboard** (COMPLETED)
-- ✅ Overview statistics (containers, images, volumes, networks)
-- ✅ Recent containers list with quick actions
-- ✅ Connection status monitoring
-- ✅ System information display
-- ✅ Quick navigation to main features
+### 🐳 **Complete Docker Management**
+- **Containers**: Full lifecycle management with real-time logs, statistics, and shell access
+- **Images**: Pull from registries, manage layers, and cleanup unused images
+- **Volumes**: Track usage, manage mounts, and reclaim disk space
+- **Networks**: Visualize topology, manage connectivity, and configure drivers
 
-### ✅ **Container Management** (COMPLETED)
-- ✅ List all containers with advanced filtering (all/running/stopped/paused)
-- ✅ Full CRUD operations: start, stop, restart, remove, kill
-- ✅ Container search and sorting functionality
-- ✅ Real-time log streaming with search and filtering
-- ✅ Container statistics and resource monitoring
-- ✅ Container details and inspection
-- ✅ Interactive shell access with command execution
-- ✅ Bulk operations and quick actions
+### 🎨 **Modern User Experience**
+- **Native Performance**: Desktop app with < 2s startup and < 100MB memory usage
+- **Dark Mode**: Complete theme system with light/dark/auto modes
+- **Responsive Design**: Works perfectly on any screen size
+- **Real-time Updates**: Live monitoring with configurable refresh intervals
 
-### ✅ **Image Management** (COMPLETED)
-- ✅ List all Docker images with filtering
-- ✅ Remove images (with force option for in-use images)
-- ✅ Advanced search and filtering (used/unused/tagged/untagged)
-- ✅ Pull images from registries
-- ✅ Image details and layer information
-- ✅ Size optimization and cleanup suggestions
-- ✅ Export and save operations (placeholder)
+### 🚀 **Advanced Features**
+- **Interactive Shell**: Built-in terminal access to containers
+- **Log Streaming**: Real-time log viewing with search and filtering
+- **Resource Monitoring**: Live CPU, memory, network, and disk I/O statistics
+- **Bulk Operations**: Multi-select actions for efficient management
+- **Smart Search**: Advanced filtering across all Docker resources
 
-### ✅ **Volume Management** (COMPLETED)
-- ✅ List Docker volumes with usage statistics
-- ✅ Remove volumes (with force option)
-- ✅ Volume details and mount information
-- ✅ Advanced search and filtering (used/unused/local/external)
-- ✅ Prune unused volumes with space reclaimed reporting
-- ✅ Volume size tracking and container references
-- ✅ Browse and backup operations (placeholder)
+## 🛠️ Tech Stack
 
-### ✅ **Network Management** (COMPLETED)
-- ✅ List Docker networks with detailed information
-- ✅ Remove networks (with safety checks for system networks)
-- ✅ Network details and connected containers
-- ✅ Advanced search and filtering by driver type
-- ✅ Prune unused networks
-- ✅ Network topology information (subnet, gateway, IPAM)
-- ✅ Connect/disconnect container operations (placeholder)
+- **Frontend**: SvelteKit + Svelte 5 + TypeScript + TailwindCSS v4
+- **Backend**: Rust + Tauri v2 + Bollard (Docker API)
+- **UI Components**: shadcn-svelte design system
+- **Cross-platform**: Native builds for Linux, macOS, and Windows
 
-### ⏳ **Settings & Configuration** (IN PROGRESS - FINAL PIECE)
-- ⏳ Docker connection settings and preferences
-- ⏳ Application themes and UI preferences
-- ⏳ Auto-refresh intervals and resource management
-- ⏳ Security and privacy settings
-- ⏳ About page and system information
-- ⏳ Settings persistence and import/export
+## 📦 Installation
 
-### ✅ **User Experience** (COMPLETED)
-- ✅ Fully responsive design for all screen sizes
-- ✅ Comprehensive loading states and error handling
-- ✅ Real-time updates and configurable auto-refresh
-- ✅ Complete dark mode support with light/dark/auto themes
-- ✅ Advanced search functionality across all resources
-- ✅ Toast notifications with svelte-sonner
-- ✅ Keyboard navigation and accessibility
+### Download Pre-built Binaries
 
-### ✅ **Performance & Quality** (COMPLETED)
-- ✅ Fast startup time (< 2s)
-- ✅ Low memory usage (< 100MB)
-- ✅ Efficient resource management
-- ✅ Type-safe APIs and error handling
-- ✅ Comprehensive state management with Svelte 5 runes
+Visit our [Releases](../../releases) page to download the latest version:
 
----
+- **Linux**: AppImage (portable), DEB (Debian/Ubuntu), RPM (Fedora/RHEL)
+- **macOS**: DMG installer (Intel and Apple Silicon)
+- **Windows**: MSI installer and portable NSIS
 
-## 🛠️ Technical Stack
+### Build from Source
 
-- **Frontend**: SvelteKit + Svelte 5 (runes) + TypeScript + TailwindCSS v4
-- **UI Components**: shadcn-svelte for consistent design system
-- **Backend**: Rust + Tauri v2 + Bollard (Docker API client)
-- **State Management**: Reactive stores with Svelte 5 runes
-- **Notifications**: svelte-sonner for toast messages
-- **Icons**: lucide-svelte icon library
-- **Performance**: Native desktop app with web technologies
-- **Cross-platform**: Windows, macOS, Linux support
-- **DevOps**: GitHub Actions for CI/CD, automated multi-platform releases
-- **Quality**: Biome for linting, Cargo for Rust tooling, automated security audits
+#### Prerequisites
+- [Docker](https://docs.docker.com/get-docker/) installed and running
+- [Rust](https://rustup.rs/) (latest stable)
+- [Node.js](https://nodejs.org/) 18+ and [Bun](https://bun.sh/)
 
----
-
-## 🎯 Version 1.0 Status - 95% Complete!
-
-**Goal**: Essential Docker management with comprehensive operations
-
-### 🎉 **Completed Features:**
-
-#### 📊 **Dashboard & Overview**
-- Real-time Docker system statistics
-- Quick access to recent containers
-- System health monitoring
-- Resource usage overview
-
-#### 🐳 **Container Operations**
-- Complete lifecycle management (create, start, stop, restart, remove)
-- Real-time log streaming with search and filtering
-- Live resource monitoring (CPU, memory, network, disk I/O)
-- Interactive shell access with command execution
-- Bulk operations and advanced filtering
-
-#### 🖼️ **Image Management**
-- Pull images from any registry with progress tracking
-- Smart filtering (used/unused, tagged/untagged)
-- Remove unused images with safety checks
-- Layer information and size optimization
-
-#### 💾 **Volume Operations**
-- Complete volume lifecycle management
-- Usage tracking and container reference counting
-- Space usage reporting and cleanup operations
-- Mount point and driver information
-
-#### 🌐 **Network Administration**
-- Network topology visualization
-- Driver-specific operations (bridge, overlay, host, macvlan)
-- Container connectivity management
-- Subnet and gateway configuration display
-
-#### 🎨 **User Interface**
-- Modern, intuitive design with shadcn-svelte components
-- Complete dark/light theme system
-- Responsive layout for all screen sizes
-- Comprehensive search and filtering across all resources
-
-### ⏳ **Remaining for v1.0 (Final 5%):**
-1. **Settings Page** - Docker connection preferences, UI settings, resource management options
-2. **Settings Persistence** - Save user preferences and configurations
-3. **About/System Info** - Application version, Docker daemon details, system requirements
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- **Docker** installed and running
-- **Rust** (latest stable) - for development
-- **Node.js** (18+) and **bun** - for frontend development
-- Modern operating system: Windows 10+, macOS 10.14+, or Linux
-
-### Installation & Development
-
+#### Development Setup
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/your-username/docsee-gui.git
 cd docsee-gui
 
 # Install dependencies
@@ -171,178 +67,92 @@ bun tauri dev
 bun tauri build
 ```
 
-### Automated Releases
+## 🚀 Usage
 
-DocSee-GUI now features automated multi-platform builds and releases:
+### Getting Started
+1. **Launch DocSee GUI** from your applications menu or command line
+2. **Docker Detection**: The app automatically detects your Docker daemon
+3. **Explore**: Navigate through containers, images, volumes, and networks
+4. **Manage**: Use the intuitive interface to perform Docker operations
 
-```bash
-# Create a new release (requires push access)
-chmod +x scripts/release.sh
-./scripts/release.sh
+### Key Operations
 
-# Or specify version directly
-./scripts/release.sh 1.0.0
-```
+#### Container Management
+- **Start/Stop/Restart**: Click the action buttons or use bulk operations
+- **View Logs**: Real-time log streaming with search capabilities
+- **Monitor Resources**: Live CPU, memory, and network statistics
+- **Shell Access**: Interactive terminal directly in the app
 
-The automated release process:
-1. **Multi-platform builds**: Linux (x64/ARM64), macOS (Intel/Apple Silicon), Windows
-2. **Package formats**: AppImage, DEB, RPM, DMG, MSI, NSIS
-3. **Automated releases**: GitHub releases with checksums and release notes
-4. **Quality gates**: Code quality, security audits, and build validation
+#### Image Operations
+- **Pull Images**: Download from Docker Hub or private registries
+- **Cleanup**: Remove unused images and reclaim disk space
+- **Inspect**: View layer information and image details
 
-### System Requirements
-- **Runtime**: Docker daemon must be accessible
-- **Memory**: ~100MB RAM usage (lightweight!)
-- **Performance**: < 2s startup time
-- **Storage**: ~50MB installed size
+#### Volume & Network Management
+- **Track Usage**: See which containers use which volumes
+- **Cleanup**: Remove unused volumes and networks safely
+- **Monitor**: View mount points and network topology
 
----
+## 🔧 Configuration
 
-## 📈 Development Roadmap
+### Docker Connection
+DocSee GUI automatically detects Docker in standard locations:
+- Linux: `/var/run/docker.sock`
+- macOS: `~/.docker/run/docker.sock`
+- Windows: `//./pipe/docker_engine`
 
-### **Version 1.0** (Current - 95% Complete)
-**Goal**: Essential Docker management with comprehensive operations
+### Settings
+Access preferences through the settings page:
+- Theme selection (light/dark/auto)
+- Auto-refresh intervals
+- Resource monitoring options
 
-**✅ Completed:**
-- Full container management with logs, stats, and shell access
-- Complete image operations with pull/remove capabilities
-- Volume management with usage tracking
-- Network administration with topology information
-- Modern UI with dark mode and responsive design
+## 🎯 Roadmap
 
-**⏳ Remaining:**
-- Settings page with preferences and configuration
-- Settings persistence and user customization
+### Current Status: Release Candidate
+- ✅ Complete Docker resource management
+- ✅ Modern UI with dark mode support
+- ✅ Real-time monitoring and logs
+- ✅ Cross-platform releases
+- ⏳ Settings page (final feature for v1.0)
 
-### **Version 2.0** (Future)
-**Goal**: Advanced management and automation
-
-**Planned Features:**
-- Container creation with custom configuration wizards
-- Docker Compose integration and stack management
-- Image building from Dockerfiles with progress tracking
-- Advanced monitoring with historical data and alerts
-- Registry management and authentication
-- Automated backup and restore capabilities
-- Multi-container operations and workflows
-
-### **Version 3.0** (Future)
-**Goal**: Enterprise features and scaling
-
-**Planned Features:**
-- Multi-host Docker management (Docker Swarm, Kubernetes)
-- Security scanning and compliance reporting
-- Advanced analytics and performance optimization
-- Plugin system and extensibility framework
-- Team collaboration and role-based access
-- Integration with CI/CD pipelines
-
----
-
-## 🎨 Design Principles
-
-1. **Simplicity First**: Clean, focused interface without overwhelming complexity
-2. **Performance**: Fast, responsive, minimal resource usage
-3. **Reliability**: Stable Docker connection with robust error recovery
-4. **Accessibility**: Keyboard navigation and clear visual hierarchy
-5. **Modern**: Contemporary design with complete dark mode support
-6. **Consistency**: Unified patterns across all features and components
-
----
-
-## 📝 Project Status
-
-**Current Version**: 1.0.0-rc (Release Candidate)
-**Status**: 95% Complete - Settings page implementation in progress
-**Phase**: Final features for Version 1.0
-
-### 🎯 **Success Metrics - ACHIEVED!**
-- ✅ **Performance**: < 2s startup time, < 100MB memory usage
-- ✅ **User Experience**: Intuitive navigation, responsive UI with dark mode
-- ✅ **Reliability**: Robust error handling and connection management
-- ✅ **Feature Coverage**: All essential Docker operations for daily use
-- ✅ **Advanced Features**: Networks, volumes, logs, stats, and shell access
-
-### 📊 **Implementation Progress**
-- 🟢 **Dashboard**: 100% Complete
-- 🟢 **Containers**: 100% Complete (with logs, stats, shell)
-- 🟢 **Images**: 100% Complete (with pull operations)
-- 🟢 **Volumes**: 100% Complete (with usage tracking)
-- 🟢 **Networks**: 100% Complete (with topology info)
-- 🟡 **Settings**: 0% Complete (final piece)
-
----
-
-## 🔧 Architecture
-
-### Frontend (SvelteKit + Svelte 5)
-- **Stores**: Reactive state management with Svelte 5 runes
-- **Components**: Reusable UI components with shadcn-svelte
-- **Services**: Abstracted Tauri API calls with error handling
-- **Routing**: File-based routing with dynamic pages
-- **Theming**: CSS-based dark mode with system detection
-
-### Backend (Rust + Tauri v2)
-- **Commands**: Tauri commands for all Docker operations
-- **Docker Client**: Bollard library for comprehensive Docker API integration
-- **Models**: Type-safe data structures for all Docker resources
-- **Error Handling**: Comprehensive error management and user feedback
-- **Logging**: Structured logging for debugging and monitoring
-
-### Key Features Implemented
-- **Real-time Updates**: Auto-refresh for all resources with configurable intervals
-- **Advanced Filtering**: Search and filter across all Docker resources
-- **Bulk Operations**: Multi-select and batch operations for efficiency
-- **Resource Monitoring**: Live stats and usage tracking
-- **Interactive Features**: Shell access, log streaming, and real-time data
-
----
+### Future Versions
+- **v2.0**: Docker Compose support, image building
+- **v3.0**: Multi-host management, advanced monitoring
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read our contributing guidelines and submit pull requests for any improvements.
+Contributions are welcome! Please read our contributing guidelines:
 
-### Development Setup
-1. Ensure Docker is running locally
-2. Install Rust toolchain and Node.js dependencies
-3. Run `bun tauri dev` for development with hot reload
-4. Test all features across different Docker scenarios
-5. Follow our TypeScript and Rust coding standards
+1. **Fork** the repository
+2. **Create** a feature branch: `git checkout -b feature/amazing-feature`
+3. **Commit** your changes: `git commit -m 'Add amazing feature'`
+4. **Push** to the branch: `git push origin feature/amazing-feature`
+5. **Open** a Pull Request
 
-### Code Style
-- **TypeScript**: Strict typing with comprehensive interfaces
-- **Svelte 5**: Use runes (`$state`, `$derived`, `$effect`) over legacy reactivity
-- **Rust**: Follow standard Rust conventions with comprehensive error handling
-- **UI**: Consistent patterns with shadcn-svelte components
-
----
+### Development Guidelines
+- Use TypeScript with strict typing
+- Follow Svelte 5 patterns (runes over legacy reactivity)
+- Ensure Rust code follows standard conventions
+- Test across different Docker environments
 
 ## 📄 License
 
-MIT License - see LICENSE file for details.
-
----
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- **Tauri Team** - For the excellent v2 desktop app framework
-- **Bollard** - For comprehensive Docker API bindings in Rust
-- **SvelteKit & Svelte 5** - For the modern, performant frontend framework
-- **shadcn-svelte** - For the beautiful, accessible UI component system
-- **Docker Community** - For the amazing containerization platform
-- **Open Source Contributors** - For all the amazing tools and libraries
+- [Tauri Team](https://tauri.app/) - Excellent desktop app framework
+- [Bollard](https://github.com/fussybeaver/bollard) - Comprehensive Docker API for Rust
+- [SvelteKit](https://kit.svelte.dev/) - Modern web development framework
+- [shadcn-svelte](https://www.shadcn-svelte.com/) - Beautiful UI components
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](../../issues)
+- **Discussions**: [GitHub Discussions](../../discussions)
+- **Documentation**: [Project Wiki](../../wiki)
 
 ---
 
-**DocSee v1.0 RC - Your fast, intuitive, and comprehensive Docker management companion!** 🐳✨
-
-*Built with ❤️ for developers who need powerful Docker management without the complexity.*
-
-### 🎉 **Almost There!**
-Just the settings page left to complete our feature-complete Version 1.0! 
-
-The application already provides:
-- **Complete Docker resource management** (containers, images, volumes, networks)
-- **Advanced operations** (logs, stats, shell access, real-time monitoring) 
-- **Modern user experience** (dark mode, responsive design, intuitive interface)
-- **High performance** (fast startup, low memory usage, efficient operations)
+**DocSee GUI** - Making Docker management fast, intuitive, and enjoyable! 🐳✨
