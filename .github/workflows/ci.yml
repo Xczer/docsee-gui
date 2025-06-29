@@ -44,13 +44,29 @@ jobs:
 
   rust-quality:
     name: Rust Code Quality
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     defaults:
       run:
         working-directory: src-tauri
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libglib2.0-dev \
+            libgdk-pixbuf-2.0-dev \
+            libpango1.0-dev \
+            libatk1.0-dev \
+            libcairo-gobject2 \
+            libcairo2-dev \
+            pkg-config
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -134,7 +150,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: ubuntu-20.04
+          - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
           - platform: macos-latest
             target: x86_64-apple-darwin
@@ -170,7 +186,7 @@ jobs:
 
       # Linux-specific dependencies
       - name: Install Linux dependencies
-        if: matrix.platform == 'ubuntu-20.04'
+        if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -178,6 +194,13 @@ jobs:
             libgtk-3-dev \
             libayatana-appindicator3-dev \
             librsvg2-dev \
+            libglib2.0-dev \
+            libgdk-pixbuf-2.0-dev \
+            libpango1.0-dev \
+            libatk1.0-dev \
+            libcairo-gobject2 \
+            libcairo2-dev \
+            pkg-config \
             patchelf
 
       - name: Build frontend
@@ -219,6 +242,13 @@ jobs:
             libgtk-3-dev \
             libayatana-appindicator3-dev \
             librsvg2-dev \
+            libglib2.0-dev \
+            libgdk-pixbuf-2.0-dev \
+            libpango1.0-dev \
+            libatk1.0-dev \
+            libcairo-gobject2 \
+            libcairo2-dev \
+            pkg-config \
             patchelf
 
       - name: Build application

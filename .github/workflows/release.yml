@@ -108,11 +108,11 @@ jobs:
       matrix:
         include:
           - target: x86_64-unknown-linux-gnu
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             name: docsee-gui-linux-x86_64
             bundles: "appimage,deb,rpm"
           - target: aarch64-unknown-linux-gnu
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             name: docsee-gui-linux-aarch64
             bundles: "appimage,deb,rpm"
           - target: x86_64-apple-darwin
@@ -156,7 +156,7 @@ jobs:
 
       # Linux-specific dependencies
       - name: Install Linux dependencies
-        if: matrix.os == 'ubuntu-20.04'
+        if: matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -164,6 +164,13 @@ jobs:
             libgtk-3-dev \
             libayatana-appindicator3-dev \
             librsvg2-dev \
+            libglib2.0-dev \
+            libgdk-pixbuf-2.0-dev \
+            libpango1.0-dev \
+            libatk1.0-dev \
+            libcairo-gobject2 \
+            libcairo2-dev \
+            pkg-config \
             patchelf \
             rpm
 
