@@ -53,7 +53,7 @@ pub async fn get_networks() -> Result<Vec<DockerNetwork>> {
             .list_networks(options)
             .await
             .map_err(|e| DockerError::OperationFailed {
-                message: format!("Failed to list networks: {}", e),
+                message: format!("Failed to list networks: {e}"),
             })?;
 
     let mut result = Vec::new();
@@ -115,7 +115,7 @@ pub async fn get_network_details(id: String) -> Result<DockerNetwork> {
         .inspect_network(&id, None::<bollard::network::InspectNetworkOptions<String>>)
         .await
         .map_err(|e| DockerError::OperationFailed {
-            message: format!("Failed to inspect network: {}", e),
+            message: format!("Failed to inspect network: {e}"),
         })?;
 
     let ipam = network.ipam.map(|ipam| NetworkIPAM {
@@ -171,7 +171,7 @@ pub async fn remove_network_cmd(id: String) -> Result<()> {
         .remove_network(&id)
         .await
         .map_err(|e| DockerError::OperationFailed {
-            message: format!("Failed to remove network: {}", e),
+            message: format!("Failed to remove network: {e}"),
         })?;
 
     Ok(())
@@ -185,7 +185,7 @@ pub async fn prune_networks_cmd() -> Result<()> {
         .prune_networks(None::<bollard::network::PruneNetworksOptions<String>>)
         .await
         .map_err(|e| DockerError::OperationFailed {
-            message: format!("Failed to prune networks: {}", e),
+            message: format!("Failed to prune networks: {e}"),
         })?;
 
     Ok(())

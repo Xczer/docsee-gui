@@ -95,7 +95,7 @@ pub async fn inspect_image(id: &str) -> Result<ImageDetails> {
             log_docker_operation(
                 "inspect_image",
                 true,
-                Some(&format!("Inspected image {}", id)),
+                Some(&format!("Inspected image {id}")),
             );
             Ok(result)
         }
@@ -120,7 +120,7 @@ pub async fn remove_image(id: &str, force: bool, no_prune: bool) -> Result<()> {
 
     match client.remove_image(id, options, None).await {
         Ok(_) => {
-            log_docker_operation("remove_image", true, Some(&format!("Removed image {}", id)));
+            log_docker_operation("remove_image", true, Some(&format!("Removed image {id}")));
             Ok(())
         }
         Err(e) => {
@@ -138,7 +138,7 @@ pub async fn pull_image(name: &str, tag: Option<&str>) -> Result<()> {
     let client = DOCKER_CLIENT.get_client().await?;
 
     let image_name = if let Some(tag) = tag {
-        format!("{}:{}", name, tag)
+        format!("{name}:{tag}")
     } else {
         name.to_string()
     };
@@ -157,7 +157,7 @@ pub async fn pull_image(name: &str, tag: Option<&str>) -> Result<()> {
             log_docker_operation(
                 "pull_image",
                 true,
-                Some(&format!("Pulled image {}", image_name)),
+                Some(&format!("Pulled image {image_name}")),
             );
             Ok(())
         }

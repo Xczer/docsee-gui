@@ -43,7 +43,7 @@ pub async fn get_volumes() -> Result<Vec<DockerVolume>> {
             .list_volumes(options)
             .await
             .map_err(|e| DockerError::OperationFailed {
-                message: format!("Failed to list volumes: {}", e),
+                message: format!("Failed to list volumes: {e}"),
             })?;
 
     let mut result = Vec::new();
@@ -82,7 +82,7 @@ pub async fn get_volume_details(name: String) -> Result<DockerVolume> {
         .inspect_volume(&name)
         .await
         .map_err(|e| DockerError::OperationFailed {
-            message: format!("Failed to inspect volume: {}", e),
+            message: format!("Failed to inspect volume: {e}"),
         })?;
 
     let usage_data = volume.usage_data.map(|data| VolumeUsageData {
@@ -117,7 +117,7 @@ pub async fn remove_volume_cmd(name: String, force: Option<bool>) -> Result<()> 
         .remove_volume(&name, Some(options))
         .await
         .map_err(|e| DockerError::OperationFailed {
-            message: format!("Failed to remove volume: {}", e),
+            message: format!("Failed to remove volume: {e}"),
         })?;
 
     Ok(())
@@ -131,7 +131,7 @@ pub async fn prune_volumes_cmd() -> Result<VolumePruneResponse> {
         .prune_volumes(None::<bollard::volume::PruneVolumesOptions<String>>)
         .await
         .map_err(|e| DockerError::OperationFailed {
-            message: format!("Failed to prune volumes: {}", e),
+            message: format!("Failed to prune volumes: {e}"),
         })?;
 
     Ok(VolumePruneResponse {

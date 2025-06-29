@@ -205,7 +205,7 @@ pub async fn exec_container(
                     log_docker_operation(
                         "exec_container",
                         true,
-                        Some(&format!("Executed command in container {}", id)),
+                        Some(&format!("Executed command in container {id}")),
                     );
                     Ok(result)
                 }
@@ -213,7 +213,7 @@ pub async fn exec_container(
                     log_docker_operation(
                         "exec_container",
                         true,
-                        Some(&format!("Executed detached command in container {}", id)),
+                        Some(&format!("Executed detached command in container {id}")),
                     );
                     Ok("Command executed in detached mode".to_string())
                 }
@@ -249,7 +249,7 @@ pub async fn inspect_container(id: &str) -> Result<ContainerDetails> {
             log_docker_operation(
                 "inspect_container",
                 true,
-                Some(&format!("Inspected container {}", id)),
+                Some(&format!("Inspected container {id}")),
             );
             Ok(result)
         }
@@ -275,7 +275,7 @@ pub async fn start_container(id: &str) -> Result<()> {
             log_docker_operation(
                 "start_container",
                 true,
-                Some(&format!("Started container {}", id)),
+                Some(&format!("Started container {id}")),
             );
             Ok(())
         }
@@ -302,7 +302,7 @@ pub async fn stop_container(id: &str, timeout: Option<i64>) -> Result<()> {
             log_docker_operation(
                 "stop_container",
                 true,
-                Some(&format!("Stopped container {}", id)),
+                Some(&format!("Stopped container {id}")),
             );
             Ok(())
         }
@@ -329,7 +329,7 @@ pub async fn restart_container(id: &str, timeout: Option<i64>) -> Result<()> {
             log_docker_operation(
                 "restart_container",
                 true,
-                Some(&format!("Restarted container {}", id)),
+                Some(&format!("Restarted container {id}")),
             );
             Ok(())
         }
@@ -358,7 +358,7 @@ pub async fn remove_container(id: &str, force: bool, remove_volumes: bool) -> Re
             log_docker_operation(
                 "remove_container",
                 true,
-                Some(&format!("Removed container {}", id)),
+                Some(&format!("Removed container {id}")),
             );
             Ok(())
         }
@@ -385,7 +385,7 @@ pub async fn kill_container(id: &str, signal: Option<&str>) -> Result<()> {
             log_docker_operation(
                 "kill_container",
                 true,
-                Some(&format!("Killed container {}", id)),
+                Some(&format!("Killed container {id}")),
             );
             Ok(())
         }
@@ -415,7 +415,7 @@ pub async fn get_container_stats(id: &str) -> Result<ContainerStatsData> {
                 log_docker_operation(
                     "get_container_stats",
                     true,
-                    Some(&format!("Retrieved stats for container {}", id)),
+                    Some(&format!("Retrieved stats for container {id}")),
                 );
                 Ok(result)
             } else {

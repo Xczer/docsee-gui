@@ -26,17 +26,17 @@ pub fn format_bytes(bytes: u64) -> String {
 #[allow(dead_code)]
 pub fn format_duration(seconds: i64) -> String {
     if seconds < 60 {
-        format!("{}s", seconds)
+        format!("{seconds}s")
     } else if seconds < 3600 {
         format!("{}m {}s", seconds / 60, seconds % 60)
     } else if seconds < 86400 {
         let hours = seconds / 3600;
         let minutes = (seconds % 3600) / 60;
-        format!("{}h {}m", hours, minutes)
+        format!("{hours}h {minutes}m", hours, minutes)
     } else {
         let days = seconds / 86400;
         let hours = (seconds % 86400) / 3600;
-        format!("{}d {}h", days, hours)
+        format!("{days}d {hours}h", days, hours)
     }
 }
 
